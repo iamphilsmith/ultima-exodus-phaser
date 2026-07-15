@@ -1,0 +1,31 @@
+{
+  "name": "ultima-exodus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:client": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
+    "concurrently": "^9.2.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.10"
+  },
+  "dependencies": {
+    "@trpc/client": "^11.17.0",
+    "@trpc/server": "^11.17.0",
+    "better-sqlite3": "^12.10.0",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "phaser": "^4.1.0",
+    "zod": "^4.4.3"
+  }
+}

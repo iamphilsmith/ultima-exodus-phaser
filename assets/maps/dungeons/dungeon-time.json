@@ -1,0 +1,4329 @@
+{
+  "name": "Time of Darkness",
+  "filename": "time.ult",
+  "notes": {
+    "chest_count_total": 116,
+    "border_note": "Mostly solid outer borders but some open border cells present.",
+    "notable": "Contains a NEW byte: 0x01 at L8(1,1) \u2014 the canonical entry corner. Tentatively ladder_up_variant (LOW confidence). L6 has 41 false_wall cells. L3 has 34 chests \u2014 richest single level in this dungeon.",
+    "unknown_byte_0x01": "Single occurrence at L8(1,1). Position is the standard dungeon entry corner (same as 0x10 in p.ult and fire.ult). Likely a ladder_up variant. LOW confidence \u2014 flagged for future verification.",
+    "sign_encoding": "0x08 = sign, clue index N-1."
+  },
+  "clue_strings": [
+    "Time awaits!",
+    "Gremlin gold!",
+    "Golden center!",
+    "Stair to heaven!",
+    "Time runs short!",
+    "Long march!",
+    "Trap!",
+    "Very near now!"
+  ],
+  "levels": [
+    {
+      "level": 1,
+      "sign_message": "Time awaits!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "ladder_up",
+          "floor",
+          "floor",
+          "wall",
+          "fountain",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "fountain",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "false_wall",
+          "fountain",
+          "false_wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "ladder_down",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "ladder_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 1,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 1,
+          "col": 5,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 1,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 4,
+          "col": 13,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 5,
+          "col": 1,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 6,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 6,
+          "col": 7,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 7,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 7,
+          "col": 7,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 7,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 7,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 13,
+          "col": 4,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x20",
+          "type": "ladder_down"
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "sign_message": "Gremlin gold!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "trap",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "gremlin",
+          "chest",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "sign",
+          "door",
+          "gremlin",
+          "chest",
+          "gremlin",
+          "door",
+          "sign"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "ladder_down",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "gremlin",
+          "chest",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "mark",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "gremlin",
+          "chest",
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "ladder_up",
+          "floor",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "sign",
+          "door",
+          "gremlin",
+          "chest",
+          "gremlin",
+          "door",
+          "sign",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "door",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "gremlin",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 1,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 1,
+          "col": 12,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 2,
+          "col": 12,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 3,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 3,
+          "col": 12,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 3,
+          "col": 13,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 4,
+          "col": 9,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 4,
+          "col": 10,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 4,
+          "col": 11,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 4,
+          "col": 12,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 4,
+          "col": 13,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 4,
+          "col": 14,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 4,
+          "col": 15,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 5,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 12,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 5,
+          "col": 13,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 12,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 7,
+          "col": 7,
+          "raw": "0x05",
+          "type": "mark"
+        },
+        {
+          "row": 7,
+          "col": 12,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 9,
+          "col": 4,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 10,
+          "col": 4,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 11,
+          "col": 3,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 4,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 11,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 8,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 12,
+          "col": 1,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 12,
+          "col": 2,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 12,
+          "col": 3,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 12,
+          "col": 4,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 12,
+          "col": 5,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 12,
+          "col": 6,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 12,
+          "col": 7,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 12,
+          "col": 13,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 13,
+          "col": 3,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 13,
+          "col": 4,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 13,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 13,
+          "col": 12,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 14,
+          "col": 4,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 15,
+          "col": 4,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "sign_message": "Golden center!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "chest",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wind",
+          "floor",
+          "wind",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "chest"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "sign",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "sign",
+          "ladder_up",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "wind",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "wind"
+        ],
+        [
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "ladder_down",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "door",
+          "floor"
+        ],
+        [
+          "wall",
+          "wind",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "wind"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "ladder_down",
+          "sign",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "sign",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "chest",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wind",
+          "floor",
+          "wind",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 1,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 1,
+          "col": 7,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 1,
+          "col": 9,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 1,
+          "col": 14,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 1,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 2,
+          "col": 8,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 2,
+          "col": 15,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 4,
+          "col": 5,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 5,
+          "col": 4,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 5,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 1,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 7,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 15,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 8,
+          "col": 2,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 8,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 14,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 9,
+          "col": 1,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 9,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 15,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 10,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 11,
+          "col": 12,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 12,
+          "col": 11,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 14,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 14,
+          "col": 8,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 15,
+          "col": 1,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 2,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 15,
+          "col": 7,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 15,
+          "col": 9,
+          "raw": "0x03",
+          "type": "wind"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "sign_message": "Stair to heaven!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "gremlin",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "gremlin"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "ladder_down",
+          "floor",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "fountain",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "floor",
+          "wall",
+          "trap",
+          "wall",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "sign",
+          "trap",
+          "false_wall",
+          "ladder_up_down",
+          "false_wall",
+          "trap",
+          "sign",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "floor",
+          "wall",
+          "trap",
+          "wall",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "fountain",
+          "floor",
+          "floor",
+          "sign",
+          "floor",
+          "floor",
+          "ladder_up",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "gremlin",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 1,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 1,
+          "col": 15,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 4,
+          "col": 7,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 4,
+          "col": 9,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 5,
+          "col": 8,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 5,
+          "col": 11,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 6,
+          "col": 8,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 7,
+          "col": 4,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 7,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 7,
+          "col": 12,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 8,
+          "col": 6,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 8,
+          "col": 7,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 8,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 10,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 9,
+          "col": 4,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 9,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 9,
+          "col": 12,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 10,
+          "col": 8,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 5,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 11,
+          "col": 8,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 12,
+          "col": 7,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 12,
+          "col": 9,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 15,
+          "col": 1,
+          "raw": "0x06",
+          "type": "gremlin"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "sign_message": "Time runs short!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "ladder_up",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "trap",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "trap",
+          "ladder_up",
+          "trap",
+          "wall",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "trap",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest",
+          "chest",
+          "chest",
+          "wall",
+          "ladder_down",
+          "floor",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "sign"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "sign",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 5,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 8,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 7,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 7,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 8,
+          "col": 8,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 8,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 9,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 14,
+          "col": 15,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 15,
+          "col": 14,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "sign_message": "Long march!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "chest",
+          "false_wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "ladder_down",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "sign",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "sign",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "wall",
+          "floor",
+          "false_wall",
+          "ladder_up",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "wall",
+          "false_wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "chest"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 2,
+          "col": 5,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 2,
+          "col": 11,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 2,
+          "col": 13,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 3,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 4,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 4,
+          "col": 5,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 4,
+          "col": 9,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 4,
+          "col": 15,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 5,
+          "col": 4,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 5,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 5,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 6,
+          "col": 3,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 6,
+          "col": 5,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 6,
+          "col": 7,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 6,
+          "col": 11,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 6,
+          "col": 13,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 7,
+          "col": 4,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 7,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 1,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 9,
+          "col": 4,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 9,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 9,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 10,
+          "col": 3,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 10,
+          "col": 11,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 11,
+          "col": 2,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 11,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 11,
+          "col": 10,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 11,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 12,
+          "col": 5,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 12,
+          "col": 11,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 12,
+          "col": 15,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 2,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 6,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 8,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 14,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 14,
+          "col": 3,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 14,
+          "col": 9,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 7,
+      "sign_message": "Trap!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "door",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "door",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "chest"
+        ],
+        [
+          "wall",
+          "sign",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "sign",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "chest"
+        ],
+        [
+          "wall",
+          "trap",
+          "wall",
+          "wall",
+          "wall",
+          "ladder_up",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "sign",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "chest"
+        ],
+        [
+          "wall",
+          "sign",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "door",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "chest"
+        ],
+        [
+          "wall",
+          "floor",
+          "door",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "chest",
+          "chest"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "door",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "chest",
+          "floor",
+          "chest",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "wall",
+          "ladder_down",
+          "false_wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "fountain",
+          "floor"
+        ],
+        [
+          "wall",
+          "chest",
+          "floor",
+          "chest",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "floor",
+          "chest",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "chest",
+          "floor",
+          "floor",
+          "floor",
+          "chest",
+          "floor",
+          "chest",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "floor",
+          "wall",
+          "ladder_up_down"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 2,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 1,
+          "col": 8,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 2,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 2,
+          "col": 9,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 2,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 4,
+          "col": 1,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 4,
+          "col": 14,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 4,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 1,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 5,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 1,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 6,
+          "col": 14,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 1,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 8,
+          "col": 14,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 2,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 9,
+          "col": 14,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 15,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 11,
+          "raw": "0xc0",
+          "type": "door"
+        },
+        {
+          "row": 11,
+          "col": 3,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x20",
+          "type": "ladder_down"
+        },
+        {
+          "row": 11,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 12,
+          "col": 14,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 13,
+          "col": 1,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 13,
+          "col": 3,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 13,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 13,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 1,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x30",
+          "type": "ladder_up_down"
+        }
+      ]
+    },
+    {
+      "level": 8,
+      "sign_message": "Very near now!",
+      "grid": [
+        [
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "ladder_up_variant",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "sign",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "sign",
+          "wall",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "wall",
+          "wall",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "chest",
+          "wall",
+          "trap",
+          "wall",
+          "floor",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "trap",
+          "chest",
+          "trap",
+          "chest",
+          "trap",
+          "trap",
+          "ladder_up",
+          "wall",
+          "floor",
+          "chest",
+          "mark"
+        ],
+        [
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "wall",
+          "false_wall",
+          "wall",
+          "wall"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "false_wall",
+          "fountain",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "wall",
+          "wall",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "floor",
+          "wall",
+          "chest",
+          "wall",
+          "floor",
+          "floor",
+          "floor"
+        ],
+        [
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "floor",
+          "floor",
+          "floor",
+          "wall",
+          "mark",
+          "wall",
+          "floor",
+          "floor",
+          "ladder_up"
+        ]
+      ],
+      "special_cells": [
+        {
+          "row": 1,
+          "col": 1,
+          "raw": "0x01",
+          "type": "ladder_up_variant"
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 3,
+          "col": 5,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 4,
+          "col": 3,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 5,
+          "col": 3,
+          "raw": "0x08",
+          "type": "sign"
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 5,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 7,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 5,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 9,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 5,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 5,
+          "col": 11,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 6,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 6,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 5,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 7,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 7,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 7,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 9,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 7,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 7,
+          "col": 11,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 8,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 5,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 9,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 7,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 9,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 9,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 9,
+          "col": 10,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 9,
+          "col": 11,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 10,
+          "col": 5,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 7,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 9,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 10,
+          "col": 11,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 5,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 6,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 7,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 8,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 9,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 10,
+          "raw": "0x04",
+          "type": "trap"
+        },
+        {
+          "row": 11,
+          "col": 11,
+          "raw": "0x10",
+          "type": "ladder_up"
+        },
+        {
+          "row": 11,
+          "col": 14,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 11,
+          "col": 15,
+          "raw": "0x05",
+          "type": "mark"
+        },
+        {
+          "row": 12,
+          "col": 13,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 12,
+          "raw": "0xa0",
+          "type": "false_wall"
+        },
+        {
+          "row": 13,
+          "col": 13,
+          "raw": "0x02",
+          "type": "fountain"
+        },
+        {
+          "row": 14,
+          "col": 11,
+          "raw": "0x40",
+          "type": "chest"
+        },
+        {
+          "row": 15,
+          "col": 11,
+          "raw": "0x05",
+          "type": "mark"
+        },
+        {
+          "row": 15,
+          "col": 15,
+          "raw": "0x10",
+          "type": "ladder_up"
+        }
+      ]
+    }
+  ]
+}
