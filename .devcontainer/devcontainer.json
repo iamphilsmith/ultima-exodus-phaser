@@ -1,0 +1,10 @@
+{
+  "name": "Ultima Exodus Dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt"
+}

@@ -36,7 +36,7 @@ dist-ssr
 # Non public files
 *.con
 *.com
-*.txt
+assets/reference/data/*.txt
 *.dat
 *.ibm
 *.bin
