@@ -72,6 +72,8 @@ npm run dev:server
 ```
 Starts only the Express + tRPC backend server using `tsx` (TypeScript runner — no build step required). Use this if you want to restart the server independently of the client.
 
+Note: if starting in Codespaces, you'll need to access the url by looking for the "Ports" tab in the bottom row of the VS Code instance. The url will have a port of 5173.
+
 ---
 
 ### Database
