@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { InputService } from '../services/InputService'
 import { OverworldView } from '../mapviews/OverworldView'
 import { TownView } from '../mapviews/TownView'
+import { ConflictView } from '../mapviews/ConflictView'
 import type { MapView } from '../mapviews/MapView'
 import { SOSARIA_LOCATIONS } from '../data/world-locations'
 import type { LocationDef } from '../data/world-locations'
@@ -37,6 +38,7 @@ export default class WorldScene extends Phaser.Scene {
 
     private activeView!:    MapView
     private inputService!:  InputService
+    private pendingAttack = false
     private logLines:       Phaser.GameObjects.Image[][] = []
     private logMessages:    string[] = ["","","","","","",""]
 
@@ -65,6 +67,7 @@ export default class WorldScene extends Phaser.Scene {
         this.load.tilemapTiledJSON('town-montor_e', 'assets/maps/towns/town-montor_e.json')
         this.load.tilemapTiledJSON('town-montor_w', 'assets/maps/towns/town-montor_w.json')
         this.load.tilemapTiledJSON('town-yew',      'assets/maps/towns/town-yew.json')
+        this.load.tilemapTiledJSON('conflict-grass', 'assets/maps/conflicts/conflict-grass.json')
     }
 
     async create() {
@@ -82,8 +85,10 @@ export default class WorldScene extends Phaser.Scene {
         await this.enterOverworld()
 
         this.inputService = new InputService(this)
-        this.inputService.onMove(dir => this.activeView.handleMove(dir))
+        this.inputService.onMove(dir => this.handleMoveOrAttack(dir))
         this.inputService.onInteract(() => this.activeView.handleInteract())
+        this.inputService.onAttack(() => this.startAttack())
+        this.inputService.onCancel(() => this.cancelAttack())
 
         this.refreshLog()
     }
@@ -92,7 +97,26 @@ export default class WorldScene extends Phaser.Scene {
         if (!this.inputService) return
         this.inputService.update()
     }
+    private startAttack() {
+        if (this.pendingAttack) return
+        this.pendingAttack = true
+        this.addLogMessage('Direction?')
+    }
 
+    private cancelAttack() {
+        if (!this.pendingAttack) return
+        this.pendingAttack = false
+        this.addLogMessage('Attack cancelled')
+    }
+
+    private handleMoveOrAttack(direction: InputDirection) {
+        if (this.pendingAttack) {
+            this.pendingAttack = false
+            this.activeView.handleAttack(direction)
+            return
+        }
+        this.activeView.handleMove(direction)
+    }
     // ── View transitions ──────────────────────────────────────
 
     private async enterOverworld(): Promise<void> {
@@ -103,7 +127,19 @@ export default class WorldScene extends Phaser.Scene {
             (msg) => this.addLogMessage(msg),
             (destination) => {
                 if (destination) this.enterLocation(destination)
-            }
+            },
+            () => this.enterConflict(),
+        )
+        this.activeView = view
+    }
+
+    private async enterConflict(): Promise<void> {
+        if (this.activeView) this.activeView.teardown()
+        const view = new ConflictView()
+        await view.load(
+            this,
+            (msg) => this.addLogMessage(msg),
+            () => this.enterOverworld(),
         )
         this.activeView = view
     }

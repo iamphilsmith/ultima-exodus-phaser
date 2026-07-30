@@ -24,15 +24,18 @@ export class InputService {
 
     private cursors:   Phaser.Types.Input.Keyboard.CursorKeys
     private keyE:      Phaser.Input.Keyboard.Key
+    private keyA:      Phaser.Input.Keyboard.Key
     private keyEscape: Phaser.Input.Keyboard.Key
 
     private moveCallbacks:     MoveCallback[]   = []
     private interactCallbacks: ActionCallback[] = []
+    private attackCallbacks:   ActionCallback[] = []
     private cancelCallbacks:   ActionCallback[] = []
 
     constructor(scene: Phaser.Scene) {
         this.cursors   = scene.input.keyboard!.createCursorKeys()
         this.keyE      = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+        this.keyA      = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A)
         this.keyEscape = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
     }
 
@@ -47,6 +50,12 @@ export class InputService {
     /** Called when the 'E' key is pressed (enter / examine). */
     onInteract(cb: ActionCallback): this {
         this.interactCallbacks.push(cb)
+        return this
+    }
+
+    /** Called when the 'A' key is pressed (attack). */
+    onAttack(cb: ActionCallback): this {
+        this.attackCallbacks.push(cb)
         return this
     }
 
@@ -68,6 +77,7 @@ export class InputService {
         else if (kb.JustDown(this.cursors.right!)) this.emitMove(InputDirection.Right)
 
         if (kb.JustDown(this.keyE))      this.emit(this.interactCallbacks)
+        if (kb.JustDown(this.keyA))      this.emit(this.attackCallbacks)
         if (kb.JustDown(this.keyEscape)) this.emit(this.cancelCallbacks)
     }
 

@@ -19,6 +19,7 @@ export class OverworldView implements MapView {
     private scene!:          Phaser.Scene
     private addLogMessage!:  (msg: string) => void
     private onExit?:         (destination?: LocationDef) => void
+    private onConflict?:     () => void
 
     // Location table for this world — passed in from WorldScene at construction.
     // OverworldView looks up the hero's tile position here on every interact.
@@ -41,10 +42,12 @@ export class OverworldView implements MapView {
         scene: Phaser.Scene,
         addLogMessage: (msg: string) => void,
         onExit?: (destination?: LocationDef) => void,
+        onConflict?: () => void,
     ): Promise<void> {
         this.scene         = scene
         this.addLogMessage = addLogMessage
         this.onExit        = onExit
+        this.onConflict    = onConflict
 
         this.mapData = scene.make.tilemap({ key: 'map' })
         const tileset = this.mapData.addTilesetImage('sosaria', 'tiles')
@@ -125,6 +128,19 @@ export class OverworldView implements MapView {
                 }).catch(err => console.error('Save failed', err))
             }
         })
+    }
+
+    handleAttack(direction: InputDirection): void {
+        const { dx: tileDX, dy: tileDY } = DIRECTION_OFFSETS[direction]
+        const targetTileX = (this.hero.tileX + tileDX + this.mapWidthTiles) % this.mapWidthTiles
+        const targetTileY = (this.hero.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
+        const tile = this.groundLayer.getTileAt(targetTileX, targetTileY)
+        if (tile?.index === 25) {
+            this.addLogMessage('Conflict')
+            this.onConflict?.()
+        } else {
+            this.addLogMessage('Nothing to attack')
+        }
     }
 
     handleInteract(): void {
