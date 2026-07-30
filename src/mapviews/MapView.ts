@@ -9,6 +9,7 @@ export interface MapView {
         onExit?: (destination?: LocationDef) => void,
     ): Promise<void>
     handleMove(dir: InputDirection): Promise<void>
+    handleAttack(dir: InputDirection): void
     handleInteract(): void
     teardown(): void
 }
