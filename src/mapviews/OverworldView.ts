@@ -2,6 +2,8 @@ import Phaser from 'phaser'
 import Hero from '../entities/Hero'
 import { trpc } from '../lib/trpc'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
+import type { ConflictMapConfig } from '../data/conflict-maps'
+import { getConflictMapForMonsterIndex } from '../data/conflict-maps'
 import type { MapView } from './MapView'
 import type { LocationDef, WorldTileEntry } from '../data/world-locations'
 
@@ -19,7 +21,7 @@ export class OverworldView implements MapView {
     private scene!:          Phaser.Scene
     private addLogMessage!:  (msg: string) => void
     private onExit?:         (destination?: LocationDef) => void
-    private onConflict?:     () => void
+    private onConflict?:     (conflictMap?: ConflictMapConfig) => void
 
     // Location table for this world — passed in from WorldScene at construction.
     // OverworldView looks up the hero's tile position here on every interact.
@@ -42,7 +44,7 @@ export class OverworldView implements MapView {
         scene: Phaser.Scene,
         addLogMessage: (msg: string) => void,
         onExit?: (destination?: LocationDef) => void,
-        onConflict?: () => void,
+        onConflict?: (conflictMap?: ConflictMapConfig) => void,
     ): Promise<void> {
         this.scene         = scene
         this.addLogMessage = addLogMessage
@@ -135,9 +137,11 @@ export class OverworldView implements MapView {
         const targetTileX = (this.hero.tileX + tileDX + this.mapWidthTiles) % this.mapWidthTiles
         const targetTileY = (this.hero.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
         const tile = this.groundLayer.getTileAt(targetTileX, targetTileY)
-        if (tile?.index === 25) {
+        const conflictMap = tile ? getConflictMapForMonsterIndex(tile.index) : undefined
+
+        if (conflictMap) {
             this.addLogMessage('Conflict')
-            this.onConflict?.()
+            this.onConflict?.(conflictMap)
         } else {
             this.addLogMessage('Nothing to attack')
         }
