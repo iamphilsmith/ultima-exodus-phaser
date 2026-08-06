@@ -6,6 +6,9 @@ import { ConflictView } from '../mapviews/ConflictView'
 import type { MapView } from '../mapviews/MapView'
 import { SOSARIA_LOCATIONS } from '../data/world-locations'
 import type { LocationDef } from '../data/world-locations'
+import type { ConflictMapConfig } from '../data/conflict-maps'
+import { CONFLICT_MAPS, getDefaultConflictMap } from '../data/conflict-maps'
+import type { InputDirection } from '../services/InputDirection'
 
 // ── Layout constants ──────────────────────────────────────────
 const TILE      = 16
@@ -14,7 +17,6 @@ const CHAR_H    = 8
 const BORDER    = 8
 const VIEW_TILES = 11
 const MAP_X     = BORDER
-const MAP_Y     = BORDER
 const MAP_PX    = VIEW_TILES * TILE              // 176
 const PANEL_X   = MAP_X + MAP_PX + BORDER        // 192
 const CANVAS_W  = 320
@@ -67,7 +69,9 @@ export default class WorldScene extends Phaser.Scene {
         this.load.tilemapTiledJSON('town-montor_e', 'assets/maps/towns/town-montor_e.json')
         this.load.tilemapTiledJSON('town-montor_w', 'assets/maps/towns/town-montor_w.json')
         this.load.tilemapTiledJSON('town-yew',      'assets/maps/towns/town-yew.json')
-        this.load.tilemapTiledJSON('conflict-grass', 'assets/maps/conflicts/conflict-grass.json')
+        CONFLICT_MAPS.forEach((conflictMap) => {
+            this.load.tilemapTiledJSON(conflictMap.tilemapKey, `assets/maps/conflicts/${conflictMap.tilemapKey}.json`)
+        })
     }
 
     async create() {
@@ -128,18 +132,23 @@ export default class WorldScene extends Phaser.Scene {
             (destination) => {
                 if (destination) this.enterLocation(destination)
             },
-            () => this.enterConflict(),
+            (conflictMap) => this.enterConflict(conflictMap),
         )
         this.activeView = view
     }
 
-    private async enterConflict(): Promise<void> {
+    private async enterConflict(conflictMap?: ConflictMapConfig): Promise<void> {
         if (this.activeView) this.activeView.teardown()
         const view = new ConflictView()
+        const selectedConflictMap = conflictMap ?? getDefaultConflictMap()
+
+        this.addLogMessage(`Loading ${selectedConflictMap.tilemapKey}`)
+
         await view.load(
             this,
             (msg) => this.addLogMessage(msg),
             () => this.enterOverworld(),
+            selectedConflictMap,
         )
         this.activeView = view
     }

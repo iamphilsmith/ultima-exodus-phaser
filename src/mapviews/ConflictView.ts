@@ -10,6 +10,8 @@ const VIEW_RADIUS = 5
 const MAP_X       = BORDER
 const MAP_Y       = BORDER
 
+import type { ConflictMapConfig } from '../data/conflict-maps'
+
 export class ConflictView implements MapView {
 
     private scene!:          Phaser.Scene
@@ -27,16 +29,18 @@ export class ConflictView implements MapView {
     async load(
         scene: Phaser.Scene,
         addLogMessage: (msg: string) => void,
-        onExit?: (destination?: unknown) => void,
+        onExit?: (destination?: LocationDef) => void,
+        conflictMap?: ConflictMapConfig,
     ): Promise<void> {
         this.scene         = scene
         this.addLogMessage = addLogMessage
         this.onExit        = () => onExit?.()
 
-        this.mapData = scene.make.tilemap({ key: 'conflict-grass' })
-        const tileset = this.mapData.addTilesetImage('conflict-grass', 'tiles')
+        const mapConfig = conflictMap ?? { tilemapKey: 'conflict-grass', layerName: 'conflict-grass-layer', monsterIndex: 25 }
+        this.mapData = scene.make.tilemap({ key: mapConfig.tilemapKey })
+        const tileset = this.mapData.addTilesetImage(mapConfig.tilemapKey, 'tiles')
         if (!tileset) throw new Error('ConflictView: failed to load tileset')
-        const layer = this.mapData.createLayer('conflict-grass-layer', tileset)
+        const layer = this.mapData.createLayer(mapConfig.layerName, tileset)
         if (!layer) throw new Error('ConflictView: failed to create layer')
         this.groundLayer = layer
         this.groundLayer.setVisible(false)
