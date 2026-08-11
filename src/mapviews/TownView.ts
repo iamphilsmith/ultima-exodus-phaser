@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import Hero from '../entities/Hero'
+import PartyAvatar from '../world/PartyAvatar'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
 import type { MapView } from './MapView'
 import type { LocationDef } from '../data/world-locations'
@@ -18,7 +18,7 @@ export class TownView implements MapView {
     private onExit!:         () => void
     private def!:            LocationDef
 
-    private hero!:           Hero
+    private partyAvatar!:           PartyAvatar
     private tileSprites:     Phaser.GameObjects.Image[][] = []
     private mapData!:        Phaser.Tilemaps.Tilemap
     private groundLayer!:    Phaser.Tilemaps.TilemapLayer
@@ -69,13 +69,13 @@ export class TownView implements MapView {
             }
         }
 
-        this.hero = new Hero(scene, this.def.entryTileX, this.def.entryTileY)
+        this.partyAvatar = new PartyAvatar(scene, this.def.entryTileX, this.def.entryTileY)
         scene.cameras.main.setScroll(0, 0)
-        this.hero.sprite.setPosition(
+        this.partyAvatar.sprite.setPosition(
             MAP_X + VIEW_RADIUS * TILE + TILE / 2,
             MAP_Y + VIEW_RADIUS * TILE + TILE / 2
         )
-        this.hero.sprite.setDepth(10)
+        this.partyAvatar.sprite.setDepth(10)
 
         this.addLogMessage(this.def.enterMsg)
         this.refreshTiles()
@@ -91,8 +91,8 @@ export class TownView implements MapView {
         if (this.moving) return
 
         const { dx: tileDX, dy: tileDY } = DIRECTION_OFFSETS[direction]
-        const targetTileX = this.hero.tileX + tileDX
-        const targetTileY = this.hero.tileY + tileDY
+        const targetTileX = this.partyAvatar.tileX + tileDX
+        const targetTileY = this.partyAvatar.tileY + tileDY
 
         // Off any edge = exit back to overworld
         if (
@@ -113,18 +113,18 @@ export class TownView implements MapView {
         const centerY = MAP_Y + VIEW_RADIUS * TILE + TILE / 2
 
         this.moving = true
-        this.hero.tileX = targetTileX
-        this.hero.tileY = targetTileY
+        this.partyAvatar.tileX = targetTileX
+        this.partyAvatar.tileY = targetTileY
         this.refreshTiles()
 
         this.scene.tweens.add({
-            targets: this.hero.sprite,
+            targets: this.partyAvatar.sprite,
             x: centerX + tileDX * 4,
             y: centerY + tileDY * 4,
             duration: 60,
             yoyo: true,
             onComplete: () => {
-                this.hero.sprite.setPosition(centerX, centerY)
+                this.partyAvatar.sprite.setPosition(centerX, centerY)
                 this.moving = false
                 this.addLogMessage(DIRECTION_NAME[direction])
             }
@@ -145,14 +145,14 @@ export class TownView implements MapView {
         this.tileSprites = []
         this.groundLayer.destroy()
         this.mapData.destroy()
-        this.hero.sprite.destroy()
+        this.partyAvatar.sprite.destroy()
     }
 
     private refreshTiles(): void {
         for (let row = 0; row < VIEW_TILES; row++) {
             for (let col = 0; col < VIEW_TILES; col++) {
-                const mapX = this.hero.tileX - VIEW_RADIUS + col
-                const mapY = this.hero.tileY - VIEW_RADIUS + row
+                const mapX = this.partyAvatar.tileX - VIEW_RADIUS + col
+                const mapY = this.partyAvatar.tileY - VIEW_RADIUS + row
                 const sprite = this.tileSprites[row][col]
                 if (
                     mapX < 0 || mapX >= this.mapWidthTiles ||

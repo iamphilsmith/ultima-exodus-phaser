@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import Hero from '../entities/Hero'
+import PartyAvatar from '../entities/PartyAvatar'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
 import type { MapView } from './MapView'
 
@@ -18,7 +18,7 @@ export class ConflictView implements MapView {
     private addLogMessage!:  (msg: string) => void
     private onExit?:         () => void
 
-    private hero!:           Hero
+    private partyAvatar!:           PartyAvatar
     private tileSprites:     Phaser.GameObjects.Image[][] = []
     private mapData!:        Phaser.Tilemaps.Tilemap
     private groundLayer!:    Phaser.Tilemaps.TilemapLayer
@@ -61,13 +61,13 @@ export class ConflictView implements MapView {
             }
         }
 
-        this.hero = new Hero(scene, VIEW_RADIUS, VIEW_RADIUS)
+        this.partyAvatar = new PartyAvatar(scene, VIEW_RADIUS, VIEW_RADIUS)
         scene.cameras.main.setScroll(0, 0)
-        this.hero.sprite.setPosition(
-            MAP_X + this.hero.worldX,
-            MAP_Y + this.hero.worldY
+        this.partyAvatar.sprite.setPosition(
+            MAP_X + this.partyAvatar.worldX,
+            MAP_Y + this.partyAvatar.worldY
         )
-        this.hero.sprite.setDepth(10)
+        this.partyAvatar.sprite.setDepth(10)
 
         this.refreshTiles()
     }
@@ -76,8 +76,8 @@ export class ConflictView implements MapView {
         if (this.moving) return
 
         const { dx: tileDX, dy: tileDY } = DIRECTION_OFFSETS[direction]
-        const targetTileX = this.hero.tileX + tileDX
-        const targetTileY = this.hero.tileY + tileDY
+        const targetTileX = this.partyAvatar.tileX + tileDX
+        const targetTileY = this.partyAvatar.tileY + tileDY
 
         if (
             targetTileX < 0 || targetTileX >= this.mapWidthTiles ||
@@ -94,17 +94,17 @@ export class ConflictView implements MapView {
         }
 
         this.moving = true
-        this.hero.tileX = targetTileX
-        this.hero.tileY = targetTileY
+        this.partyAvatar.tileX = targetTileX
+        this.partyAvatar.tileY = targetTileY
         this.refreshTiles()
 
         this.scene.tweens.add({
-            targets: this.hero.sprite,
-            x: MAP_X + this.hero.worldX,
-            y: MAP_Y + this.hero.worldY,
+            targets: this.partyAvatar.sprite,
+            x: MAP_X + this.partyAvatar.worldX,
+            y: MAP_Y + this.partyAvatar.worldY,
             duration: 60,
             onComplete: () => {
-                this.hero.sprite.setPosition(MAP_X + this.hero.worldX, MAP_Y + this.hero.worldY)
+                this.partyAvatar.sprite.setPosition(MAP_X + this.partyAvatar.worldX, MAP_Y + this.partyAvatar.worldY)
                 this.moving = false
                 this.addLogMessage(DIRECTION_NAME[direction])
             }
@@ -124,7 +124,7 @@ export class ConflictView implements MapView {
         this.tileSprites = []
         this.groundLayer.destroy()
         this.mapData.destroy()
-        this.hero.sprite.destroy()
+        this.partyAvatar.sprite.destroy()
     }
 
     private refreshTiles(): void {

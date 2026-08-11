@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import Hero from '../entities/Hero'
+import PartyAvatar from '../entities/PartyAvatar'
 import { trpc } from '../lib/trpc'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
 import type { ConflictMapConfig } from '../data/conflict-maps'
@@ -27,7 +27,7 @@ export class OverworldView implements MapView {
     // OverworldView looks up the hero's tile position here on every interact.
     private locations:       WorldTileEntry[]
 
-    private hero!:           Hero
+    private partyAvatar!:           PartyAvatar
     private tileSprites:     Phaser.GameObjects.Image[][] = []
     private mapData!:        Phaser.Tilemaps.Tilemap
     private groundLayer!:    Phaser.Tilemaps.TilemapLayer
@@ -79,16 +79,16 @@ export class OverworldView implements MapView {
         this.fogGraphics.setDepth(5)
 
         const saved = await trpc.hero.load.query()
-        this.hero = saved
-            ? new Hero(scene, saved.tileX, saved.tileY)
-            : new Hero(scene, 5, 5)
+        this.partyAvatar = saved
+            ? new PartyAvatar(scene, saved.tileX, saved.tileY)
+            : new PartyAvatar(scene, 5, 5)
 
         scene.cameras.main.setScroll(0, 0)
-        this.hero.sprite.setPosition(
+        this.partyAvatar.sprite.setPosition(
             MAP_X + VIEW_RADIUS * TILE + TILE / 2,
             MAP_Y + VIEW_RADIUS * TILE + TILE / 2
         )
-        this.hero.sprite.setDepth(10)
+        this.partyAvatar.sprite.setDepth(10)
 
         this.refreshTiles()
     }
@@ -97,8 +97,8 @@ export class OverworldView implements MapView {
         if (this.moving) return
 
         const { dx: tileDX, dy: tileDY } = DIRECTION_OFFSETS[direction]
-        const targetTileX = (this.hero.tileX + tileDX + this.mapWidthTiles)  % this.mapWidthTiles
-        const targetTileY = (this.hero.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
+        const targetTileX = (this.partyAvatar.tileX + tileDX + this.mapWidthTiles)  % this.mapWidthTiles
+        const targetTileY = (this.partyAvatar.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
 
         if (!this.canMoveTo(targetTileX, targetTileY)) {
             this.addLogMessage(`${DIRECTION_NAME[direction]} BLK`)
@@ -109,23 +109,23 @@ export class OverworldView implements MapView {
         const centerY = MAP_Y + VIEW_RADIUS * TILE + TILE / 2
 
         this.moving = true
-        this.hero.tileX = targetTileX
-        this.hero.tileY = targetTileY
+        this.partyAvatar.tileX = targetTileX
+        this.partyAvatar.tileY = targetTileY
         this.refreshTiles()
 
         this.scene.tweens.add({
-            targets: this.hero.sprite,
+            targets: this.partyAvatar.sprite,
             x: centerX + tileDX * 4,
             y: centerY + tileDY * 4,
             duration: 60,
             yoyo: true,
             onComplete: () => {
-                this.hero.sprite.setPosition(centerX, centerY)
+                this.partyAvatar.sprite.setPosition(centerX, centerY)
                 this.moving = false
                 this.addLogMessage(DIRECTION_NAME[direction])
                 trpc.hero.save.mutate({
-                    tileX: this.hero.tileX,
-                    tileY: this.hero.tileY,
+                    tileX: this.partyAvatar.tileX,
+                    tileY: this.partyAvatar.tileY,
                     mapId: 'world',
                 }).catch(err => console.error('Save failed', err))
             }
@@ -134,8 +134,8 @@ export class OverworldView implements MapView {
 
     handleAttack(direction: InputDirection): void {
         const { dx: tileDX, dy: tileDY } = DIRECTION_OFFSETS[direction]
-        const targetTileX = (this.hero.tileX + tileDX + this.mapWidthTiles) % this.mapWidthTiles
-        const targetTileY = (this.hero.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
+        const targetTileX = (this.partyAvatar.tileX + tileDX + this.mapWidthTiles) % this.mapWidthTiles
+        const targetTileY = (this.partyAvatar.tileY + tileDY + this.mapHeightTiles) % this.mapHeightTiles
         const tile = this.groundLayer.getTileAt(targetTileX, targetTileY)
         const conflictMap = tile ? getConflictMapForMonsterIndex(tile.index) : undefined
 
@@ -152,7 +152,7 @@ export class OverworldView implements MapView {
         // This replaces the old hardcoded tile-index check and works for
         // towns, castles, and shrines without any further branching here.
         const entry = this.locations.find(
-            e => e.tileX === this.hero.tileX && e.tileY === this.hero.tileY
+            e => e.tileX === this.partyAvatar.tileX && e.tileY === this.partyAvatar.tileY
         )
 
         if (entry) {
@@ -160,7 +160,7 @@ export class OverworldView implements MapView {
             this.onExit?.(entry.location)
         } else {
             // Debug helper: log hero position so you can fill in world-locations.ts
-            this.addLogMessage(`[${this.hero.tileX},${this.hero.tileY}]`)
+            this.addLogMessage(`[${this.partyAvatar.tileX},${this.partyAvatar.tileY}]`)
         }
     }
 
@@ -170,14 +170,14 @@ export class OverworldView implements MapView {
         this.fogGraphics.destroy()
         this.groundLayer.destroy()
         this.mapData.destroy()
-        this.hero.sprite.destroy()
+        this.partyAvatar.sprite.destroy()
     }
 
     private refreshTiles(): void {
         for (let row = 0; row < VIEW_TILES; row++) {
             for (let col = 0; col < VIEW_TILES; col++) {
-                const mapX = ((this.hero.tileX - VIEW_RADIUS + col) % this.mapWidthTiles  + this.mapWidthTiles)  % this.mapWidthTiles
-                const mapY = ((this.hero.tileY - VIEW_RADIUS + row) % this.mapHeightTiles + this.mapHeightTiles) % this.mapHeightTiles
+                const mapX = ((this.partyAvatar.tileX - VIEW_RADIUS + col) % this.mapWidthTiles  + this.mapWidthTiles)  % this.mapWidthTiles
+                const mapY = ((this.partyAvatar.tileY - VIEW_RADIUS + row) % this.mapHeightTiles + this.mapHeightTiles) % this.mapHeightTiles
                 const tile = this.groundLayer.getTileAt(mapX, mapY)
                 if (tile) this.tileSprites[row][col].setFrame(tile.index - 1)
             }
@@ -217,8 +217,8 @@ export class OverworldView implements MapView {
         for (let i = 0; i < steps; i++) {
             cx += stepX
             cy += stepY
-            const mapX = ((this.hero.tileX + Math.floor(cx)) % this.mapWidthTiles  + this.mapWidthTiles)  % this.mapWidthTiles
-            const mapY = ((this.hero.tileY + Math.floor(cy)) % this.mapHeightTiles + this.mapHeightTiles) % this.mapHeightTiles
+            const mapX = ((this.partyAvatar.tileX + Math.floor(cx)) % this.mapWidthTiles  + this.mapWidthTiles)  % this.mapWidthTiles
+            const mapY = ((this.partyAvatar.tileY + Math.floor(cy)) % this.mapHeightTiles + this.mapHeightTiles) % this.mapHeightTiles
             const tile = this.groundLayer.getTileAt(mapX, mapY)
             if (!tile) return false
             const isDest = Math.floor(cx) === endX && Math.floor(cy) === endY

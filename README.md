@@ -35,10 +35,13 @@ Original game had the following dimensions.
 root/
   assets/           # Maps, sprites, tilesets
   src/              # Phaser client code
-    entities/       # Game objects (Hero, etc.)
+    data/           # Predefined game data (races, classes, conflict maps)
+    entities/       # Pure data types (Hero, Party) — no Phaser dependency
     lib/            # Client utilities (tRPC client, action log)
-    scenes/         # Phaser scenes (WorldScene, etc.)
+    mapviews/       # MapView implementations (Overworld, Town, Conflict)
+    scenes/         # Phaser scenes (WorldScene, MainMenuScene)
     types/          # Shared TypeScript types
+    world/          # Shared Phaser rendering objects (PartyAvatar)
   server/           # Express + tRPC backend
     db/             # Drizzle client and schema
     routers/        # tRPC routers (hero, etc.)

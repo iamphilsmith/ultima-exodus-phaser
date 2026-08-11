@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-export default class Hero {
+export default class PartyAvatar {
     public sprite: Phaser.GameObjects.Sprite
 
     public tileX: number
