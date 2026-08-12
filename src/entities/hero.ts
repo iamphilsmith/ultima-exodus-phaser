@@ -1,14 +1,13 @@
 // src/entities/hero.ts
-import type { Race, HeroClass, Sex } from '@/data/hero-options';
+import type { Race, HeroClass, Sex } from '../data/hero-options.ts';
 
-// --- Creation-time constants ---
 export const CREATION_STAT_TOTAL = 50;
 export const CREATION_STAT_MIN = 0;
 export const CREATION_STAT_MAX = 25;
 export const STARTING_HIT_POINTS = 100;
 export const NAME_MAX_LENGTH = 12;
+export const ROSTER_MAX_SIZE = 20;
 
-// --- Attributes chosen during "create a new hero" ---
 export interface HeroAttributes {
   name: string;
   sex: Sex;
@@ -20,15 +19,13 @@ export interface HeroAttributes {
   wisdom: number;
 }
 
-// --- Values computed once at creation, then grow over time ---
 export interface HeroDerived {
   maxHitPoints: number;
   maxMagicPoints: number;
 }
 
-// --- Values that change constantly during play ---
 export interface HeroRuntimeState {
-  hitPoints: number;      // current HP — decreases in combat, restored by rest/spells
+  hitPoints: number;
   magicPoints: number;
   experience: number;
   level: number;
@@ -42,8 +39,8 @@ export interface HeroEquipmentRef {
   equippedArmorId: string | null;
 }
 
-// --- The full hero, as used app-wide ---
 export interface Hero extends HeroAttributes, HeroDerived, HeroRuntimeState, HeroEquipmentRef {
   id: string;
+  rosterSlot: number; // 0–19, stable until terminated
   createdAt: number;
 }

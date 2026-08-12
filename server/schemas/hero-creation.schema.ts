@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { RACES, CLASSES, SEXES } from '@/data/hero-options';
-import { CREATION_STAT_TOTAL, CREATION_STAT_MIN, CREATION_STAT_MAX, NAME_MAX_LENGTH } from '@/entities/hero';
+import { RACES, CLASSES, SEXES } from '../../src/data/hero-options.ts';
+import { CREATION_STAT_TOTAL, CREATION_STAT_MIN, CREATION_STAT_MAX, NAME_MAX_LENGTH } from '../../src/entities/hero.ts';
 
 export const HeroCreationSchema = z.object({
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH),

@@ -1,6 +1,7 @@
 // src/orgviews/OptionsMenuView.ts
 import Phaser from 'phaser'
 import type { OrgView } from './OrgView'
+import { CreateCharacterView } from './CreateCharacterView'
 import { writeTextCentered } from '../ui/BitmapText'
 
 const EGA_GREEN = 0x54fc54
@@ -12,13 +13,15 @@ export class OptionsMenuView implements OrgView {
 
     private scene!: Phaser.Scene
     private onExit!: () => void
+    private switchView!: (view: OrgView) => void
 
     private staticImages: Phaser.GameObjects.Image[] = []
     private statusImages: Phaser.GameObjects.Image[] = []
 
-    load(scene: Phaser.Scene, onExit: () => void): void {
+    load(scene: Phaser.Scene, onExit: () => void, switchView: (view: OrgView) => void): void {
         this.scene  = scene
         this.onExit = onExit
+        this.switchView = switchView
 
         this.staticImages.push(
             ...writeTextCentered(scene, 'PARTY ORGANIZATION',      34, EGA_GREEN),
@@ -53,7 +56,7 @@ export class OptionsMenuView implements OrgView {
     }
 
     private handleExamine   = () => this.showStub()
-    private handleCreate    = () => this.showStub()
+    private handleCreate    = () => this.switchView(new CreateCharacterView())
     private handleForm      = () => this.showStub()
     private handleDisperse  = () => this.showStub()
     private handleTerminate = () => this.showStub()
