@@ -2,6 +2,7 @@
 import Phaser from 'phaser'
 import type { OrgView } from './OrgView'
 import { CreateCharacterView } from './CreateCharacterView'
+import { RegisterView } from './RegisterView'
 import { writeTextCentered } from '../ui/BitmapText'
 
 const EGA_GREEN = 0x54fc54
@@ -55,7 +56,7 @@ export class OptionsMenuView implements OrgView {
         this.clearStatus()
     }
 
-    private handleExamine   = () => this.showStub()
+    private handleExamine   = () => this.switchView(new RegisterView())
     private handleCreate    = () => this.switchView(new CreateCharacterView())
     private handleForm      = () => this.showStub()
     private handleDisperse  = () => this.showStub()
