@@ -3,6 +3,7 @@ import Phaser from 'phaser'
 import IntroScene from './scenes/IntroScene.ts'
 import MainMenuScene from './scenes/MainMenuScene.ts'
 import WorldScene from './scenes/WorldScene.ts'
+import PartyOrganizationScene from './scenes/PartyOrganizationScene.ts'
 
 const config =
 {
@@ -16,7 +17,7 @@ const config =
         default: 'arcade',
         arcade: { debug: false}
     },
-    scene: [ IntroScene, MainMenuScene, WorldScene ]
+    scene: [ IntroScene, MainMenuScene, PartyOrganizationScene, WorldScene ]
 }
 
 new Phaser.Game(config)

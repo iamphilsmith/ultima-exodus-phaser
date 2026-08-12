@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
-import PartyAvatar from '../entities/PartyAvatar'
+import PartyAvatar from '../world/PartyAvatar'
 import { trpc } from '../lib/trpc'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
-import type { ConflictMapConfig } from '../data/conflict-maps'
 import { getConflictMapForMonsterIndex } from '../data/conflict-maps'
+import type { ConflictMapConfig } from '../data/conflict-maps'
 import type { MapView } from './MapView'
 import type { LocationDef, WorldTileEntry } from '../data/world-locations'
 
@@ -78,7 +78,7 @@ export class OverworldView implements MapView {
         this.fogGraphics = scene.add.graphics()
         this.fogGraphics.setDepth(5)
 
-        const saved = await trpc.hero.load.query()
+        const saved = await trpc.gameState.load.query()
         this.partyAvatar = saved
             ? new PartyAvatar(scene, saved.tileX, saved.tileY)
             : new PartyAvatar(scene, 5, 5)
@@ -123,7 +123,7 @@ export class OverworldView implements MapView {
                 this.partyAvatar.sprite.setPosition(centerX, centerY)
                 this.moving = false
                 this.addLogMessage(DIRECTION_NAME[direction])
-                trpc.hero.save.mutate({
+                trpc.gameState.save.mutate({
                     tileX: this.partyAvatar.tileX,
                     tileY: this.partyAvatar.tileY,
                     mapId: 'world',

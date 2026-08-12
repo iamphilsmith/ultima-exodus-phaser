@@ -37,4 +37,11 @@ export const partySlots = sqliteTable('party_slots', {
   heroId: text('hero_id').references(() => heroes.id),
 });
 
+export const gameState = sqliteTable('game_state', {
+  id: integer('id').primaryKey(),  // always 1 — single-row table
+  tileX: integer('tile_x').notNull(),
+  tileY: integer('tile_y').notNull(),
+  mapId: text('map_id').notNull(),
+});
+
 export type HeroState = typeof heroes.$inferSelect

@@ -51,11 +51,11 @@ export default class MainMenuScene extends Phaser.Scene {
     // ── Option handlers ────────────────────────────────────────
 
     private selectReturn() {
-        // TODO: implement "Return to the View" in a future step
+        this.scene.start('intro')
     }
 
     private selectOrganize() {
-        // TODO: implement "Organize a Party" in a future step
+        this.scene.start('organize-party')
     }
 
     private selectJourney() {

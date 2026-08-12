@@ -1,13 +1,14 @@
+// server/routers/game-state.ts
 import { router, publicProcedure } from '../trpc.ts'
 import { db } from '../db/index.ts'
-import { heroes } from '../db/schema.ts'
+import { gameState } from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
-export const heroRouter = router({
+export const gameStateRouter = router({
     load: publicProcedure
         .query(() => {
-            return db.select().from(heroes).where(eq(heroes.id, 'player')).get()
+            return db.select().from(gameState).where(eq(gameState.id, 1)).get()
         }),
 
     save: publicProcedure
@@ -17,10 +18,10 @@ export const heroRouter = router({
             mapId: z.string(),
         }))
         .mutation(({ input }) => {
-            return db.insert(heroes)
-                .values({ id: 'player', ...input })
+            return db.insert(gameState)
+                .values({ id: 1, ...input })
                 .onConflictDoUpdate({
-                    target: heroes.id,
+                    target: gameState.id,
                     set: input,
                 })
                 .run()

@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import PartyAvatar from '../entities/PartyAvatar'
+import PartyAvatar from '../world/PartyAvatar'
 import { InputDirection, DIRECTION_OFFSETS, DIRECTION_NAME } from '../services/InputDirection'
 import type { MapView } from './MapView'
 
