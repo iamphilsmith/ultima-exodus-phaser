@@ -1,6 +1,7 @@
-import { router } from './trpc.ts'
-import { gameStateRouter } from './routers/game-state.ts'
+// server/db/index.ts
+import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import * as schema from './schema.ts'
 
-const appRouter = router({
-    gameState: gameStateRouter,
-})
+const sqlite = new Database('./game.db')
+export const db = drizzle(sqlite, { schema })
