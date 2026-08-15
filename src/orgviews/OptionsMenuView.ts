@@ -4,6 +4,7 @@ import type { OrgView } from './OrgView'
 import { CreateCharacterView } from './CreateCharacterView'
 import { RegisterView } from './RegisterView'
 import { writeTextCentered } from '../ui/BitmapText'
+import { FormPartyView } from './FormPartyView'
 
 const EGA_GREEN = 0x54fc54
 const EGA_RED   = 0xfc5454
@@ -58,7 +59,7 @@ export class OptionsMenuView implements OrgView {
 
     private handleExamine   = () => this.switchView(new RegisterView())
     private handleCreate    = () => this.switchView(new CreateCharacterView())
-    private handleForm      = () => this.showStub()
+    private handleForm      = () => this.switchView(new FormPartyView())
     private handleDisperse  = () => this.showStub()
     private handleTerminate = () => this.showStub()
     private handleMainMenu  = () => this.onExit()

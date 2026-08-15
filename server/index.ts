@@ -3,10 +3,12 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express'
 import { router } from './trpc.ts'
 import { gameStateRouter } from './routers/game-state.ts'
 import { heroRouter } from './routers/hero.ts'
+import { partyRouter } from './routers/party.ts'
 
 const appRouter = router({
     gameState: gameStateRouter,
     hero: heroRouter,
+    party: partyRouter,
 })
 
 export type AppRouter = typeof appRouter
