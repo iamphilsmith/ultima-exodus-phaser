@@ -5,6 +5,8 @@ import { CreateCharacterView } from './CreateCharacterView'
 import { RegisterView } from './RegisterView'
 import { writeTextCentered } from '../ui/BitmapText'
 import { FormPartyView } from './FormPartyView'
+import { trpc } from '../lib/trpc'
+import { TerminateCharacterView } from './TerminateCharacterView'
 
 const EGA_GREEN = 0x54fc54
 const EGA_RED   = 0xfc5454
@@ -26,6 +28,7 @@ export class OptionsMenuView implements OrgView {
         this.switchView = switchView
 
         this.staticImages.push(
+            ...writeTextCentered(scene, 'EXODUS', 10, EGA_WHITE, 2),    
             ...writeTextCentered(scene, 'PARTY ORGANIZATION',      34, EGA_GREEN),
             ...writeTextCentered(scene, 'OPTIONS:',                 48, EGA_RED),
             ...writeTextCentered(scene, 'Examine the register',     66, EGA_CYAN),
@@ -60,14 +63,13 @@ export class OptionsMenuView implements OrgView {
     private handleExamine   = () => this.switchView(new RegisterView())
     private handleCreate    = () => this.switchView(new CreateCharacterView())
     private handleForm      = () => this.switchView(new FormPartyView())
-    private handleDisperse  = () => this.showStub()
-    private handleTerminate = () => this.showStub()
-    private handleMainMenu  = () => this.onExit()
-
-    private showStub(): void {
+    private handleDisperse = async () => {
+        await trpc.party.disperse.mutate()
         this.clearStatus()
-        this.statusImages = writeTextCentered(this.scene, 'Not yet implemented', 150, EGA_WHITE)
+        this.statusImages = writeTextCentered(this.scene, 'Party dispersed', 150, EGA_WHITE)
     }
+    private handleTerminate = () => this.switchView(new TerminateCharacterView())
+    private handleMainMenu  = () => this.onExit()
 
     private clearStatus(): void {
         this.statusImages.forEach(img => img.destroy())

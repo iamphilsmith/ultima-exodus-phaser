@@ -31,7 +31,7 @@ export default class PartyOrganizationScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor('#000000')
 
         this.drawBorder()
-        writeTextCentered(this, 'EXODUS', 10, EGA_WHITE, 2)
+//        writeTextCentered(this, 'EXODUS', 10, EGA_WHITE, 2)
 
         this.switchView(new OptionsMenuView())
     }

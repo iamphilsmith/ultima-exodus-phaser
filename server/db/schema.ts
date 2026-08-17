@@ -3,6 +3,7 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 export const heroes = sqliteTable('heroes', {
   id: text('id').primaryKey(),
   rosterSlot: integer('roster_slot').notNull(),
+  terminated: integer('terminated', { mode: 'boolean' }).notNull().default(false),
   name: text('name').notNull(),
   sex: text('sex').notNull(),
   race: text('race').notNull(),

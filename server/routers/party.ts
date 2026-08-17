@@ -12,6 +12,12 @@ export const partyRouter = router({
             return slots.filter(s => s.heroId !== null)
         }),
 
+    disperse: publicProcedure
+        .mutation(() => {
+            db.delete(partySlots).run()
+            return { success: true }
+        }),
+    
     form: publicProcedure
         .input(z.object({
             // rosterSlots are the 1-based Entry# numbers the player typed in.
