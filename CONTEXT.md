@@ -2,6 +2,15 @@
 
 A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeScript.
 
+> **Note:** this document describes the **current implementation** — the thick-client
+> Phaser + tRPC + SQLite stack actually running in this repo today. A migration to an
+> Angular + Phaser client with a server-authoritative C#/.NET backend is planned (as a
+> learning exercise); see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for that target design.
+> Most rendering/asset knowledge below (charset handling, dungeon renderer spec, map
+> formats) is expected to carry over largely unchanged; the parts that describe
+> server responsibilities and the thick-client philosophy will be superseded once the
+> migration begins. This doc will be updated in step with that work.
+
 ---
 
 ## Tech Stack
@@ -19,9 +28,14 @@ A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeS
 
 ## Architecture Decisions
 
-- **Thick client** — all game logic runs in Phaser. The server is a dumb persistence layer only.
-- **Save on every move** — hero position is saved to SQLite after every tile movement via tRPC.
-- **Single player row** — hero is always `id: 'player'`, upserted on save.
+*(Current implementation. The thick-client/dumb-server split below is being replaced
+by a server-authoritative model — see [`ARCHITECTURE.md`](./ARCHITECTURE.md). The
+rendering-only decisions here, e.g. camera and Phaser-canvas UI, are expected to hold
+regardless of backend, since they concern the client's display layer only.)*
+
+- **Thick client** — all game logic runs in Phaser. The server is a dumb persistence layer only. *(superseded — see `ARCHITECTURE.md`)*
+- **Save on every move** — hero position is saved to SQLite after every tile movement via tRPC. *(current stack only)*
+- **Single player row** — hero is always `id: 'player'`, upserted on save. *(current stack only)*
 - **No Phaser camera follow** — camera is fixed at 0,0. The tile grid redraws around the hero position instead.
 - **Full Phaser rendering** — no HTML/CSS UI. Everything including text, borders, and panels is rendered inside the Phaser canvas.
 
@@ -191,6 +205,7 @@ const EGA_WHITE = 0xfcfcfc
 - `world-locations.ts` — all Sosaria overworld coordinates confirmed and wired
 
 ### Still To Do 📋
+- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` (open questions tracked there)
 - Wire real moon phase data to `drawMoonPhase()`
 - Wire real wind direction data to `drawWindDirection()`
 - Populate party panel from real character data (BCD-encoded, from ROSTER.ULT / PARTY.ULT)
@@ -256,6 +271,11 @@ vite.config.ts              — proxy /trpc → localhost:3000
 ---
 
 ## Architecture — Map System
+
+*(This section describes the `MapView` pattern within the current Phaser/tRPC stack.
+It's a client-side rendering pattern, so it's expected to remain relevant after the
+server-side migration described in `ARCHITECTURE.md` — modes will still map to
+`MapView` implementations, just driven by server snapshots instead of local state.)*
 
 ### Target Architecture
 

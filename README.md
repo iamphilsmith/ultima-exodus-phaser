@@ -2,6 +2,11 @@
 
 A single-player RPG built with Phaser 4 and TypeScript, inspired by the classic Ultima series.
 
+> **Note:** everything below describes the stack and setup **currently running in this
+> repo**. A migration to an Angular + Phaser client with a C#/.NET server is planned
+> as a learning exercise — see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the target
+> design. This README will be updated once that migration is actually underway.
+
 Original game had the following dimensions. 
 // Left border: 8 px
 // map = 11 x 16 = 176 px
