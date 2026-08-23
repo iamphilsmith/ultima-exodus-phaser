@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="UltimaExodus.Api/UltimaExodus.Api.csproj" />
+  <Project Path="UltimaExodus.Data/UltimaExodus.Data.csproj" />
+  <Project Path="UltimaExodus.Engine/UltimaExodus.Engine.csproj" />
+</Solution>
