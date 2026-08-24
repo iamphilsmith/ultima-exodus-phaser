@@ -9,5 +9,5 @@
      "version": "10.0"
     }
   },
-  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli"
+  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli && (cd client-angular && npm install)"
 }
