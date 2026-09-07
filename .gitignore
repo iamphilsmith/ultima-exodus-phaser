@@ -52,3 +52,5 @@ Screenshot-from-original-game*.png
 assets/reference/U3*.jpg
 assets/reference/sosaria.jpg
 assets/reference/data/*.txt
+
+dotnet/
