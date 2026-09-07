@@ -8,9 +8,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularDev", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+       policy.SetIsOriginAllowed(origin =>
+            {
+                var host = new Uri(origin).Host;
+                return host == "localhost" || host.EndsWith(".app.github.dev");
+            })
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
