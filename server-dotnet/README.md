@@ -4,43 +4,42 @@
 > `ARCHITECTURE.md` and sequenced in `MIGRATION_PLAN.md`. This file tracks
 > the operational details (ports, tooling, decisions made along the way)
 > that don't belong in either of those documents but need a durable home
-> so they aren't rediscovered every session.
+> so they aren't rediscovered every session. Covers both `server-dotnet/`
+> and `client-angular/` despite the filename/location.
 
 ---
 
 ## Status
 
-**Phase 0 — Scaffolding. Complete.** See `MIGRATION_PLAN.md` for the
-full step list and what Phase 1 covers next.
+**Phase 0 — Scaffolding. Complete and fully verified**, both locally
+(Windows PC) and in a fresh GitHub Codespaces rebuild.
 
-- [x] Step 1 — C# solution scaffolded (`UltimaExodus.sln`, three projects)
+- [x] Step 1 — C# solution scaffolded (`UltimaExodus.slnx`, three projects)
 - [x] Step 2 — `/api/health` endpoint live
 - [x] Step 3 — Angular workspace scaffolded (`client-angular/`)
 - [x] Step 4 — Angular → API wiring
 - [x] Step 5 — Empty Phaser mount inside Angular
+- [x] Devcontainer rebuild verified — `.NET 10.0.400` and `Angular CLI
+      22.1.5` both present, `client-angular/node_modules` installed via
+      `postCreateCommand` (not editor auto-install), full run confirmed
+      working over Codespaces port forwarding
 
 Both processes (`dotnet run --project UltimaExodus.Api`, `ng serve`) run
 side by side, Angular displays the health payload fetched from the C#
 API, and a blank Phaser canvas mounts/unmounts cleanly inside an Angular
-component. `src/` and `server/` (old stack) remain untouched throughout.
-
-**Not yet done:** commit + merge this branch, then rebuild the Codespace
-to validate the devcontainer changes end-to-end (see "Devcontainer"
-section below — this is the one unverified piece of Phase 0).
+component. Confirmed working locally *and* in Codespaces. `src/` and
+`server/` (old stack) remain untouched throughout.
 
 ---
 
 ## Ports in use
 
-Tracking every port across both stacks (old and new) to avoid collisions
-as the new stack grows.
-
 | Port | Service | Stack | Notes |
 |---|---|---|---|
 | 3000 | Express + tRPC | Current (old) | Hardcoded in `server/index.ts` |
 | 5173 | Vite dev server | Current (old) | Default, proxies `/trpc` → 3000 |
-| 5223 | `UltimaExodus.Api` (HTTP) | New | Bound but not what Angular calls; useful for `curl` testing |
-| 7107 | `UltimaExodus.Api` (HTTPS) | New | What Angular actually calls — see below |
+| 5223 | `UltimaExodus.Api` (HTTP) | New | What Angular actually calls in Codespaces — see "Codespaces networking" below |
+| 7107 | `UltimaExodus.Api` (HTTPS) | New | What Angular calls for local dev; not used in Codespaces (no need — see below) |
 | 4200 | `ng serve` | New | Default Angular CLI port, no collisions found |
 
 ---
@@ -49,90 +48,142 @@ as the new stack grows.
 
 ### .NET version: pinned to 10.0
 
-Built and confirmed working on .NET 10. The devcontainer feature is
-pinned to this version explicitly (`"version": "10.0"`) rather than left
-to resolve to whatever's latest at container build time — reproducibility
-matters more than always having the newest SDK for a project like this.
+Built and confirmed working on .NET 10 (`10.0.400` in Codespaces). The
+devcontainer feature is pinned explicitly (`"version": "10.0"`) rather
+than left to resolve to whatever's latest at container build time —
+reproducibility matters more than always having the newest SDK.
 
-### HTTPS: set up in full, not deferred
+### HTTPS: set up locally, sidestepped in Codespaces
 
-Originally planned to skip TLS for Phase 0 and drop
-`app.UseHttpsRedirection()` (see Step 2 history). That held until Step 4,
-where the Angular dev server's origin turned out to be affected by a
-browser policy that force-upgrades outbound `fetch`/`XHR` calls to HTTPS
-regardless of what scheme the code requests. Since that policy couldn't
-be changed on the affected machine, the fix was to set up HTTPS properly
-rather than fight it:
+Locally (Windows), a browser-level "always use HTTPS" policy couldn't be
+turned off, so the API needed genuine, trusted HTTPS:
 
-- `dotnet dev-certs https --trust` — trusts the .NET dev cert at the OS
-  level (Windows: triggers a one-time confirmation dialog)
-- Run the API with `dotnet run --project UltimaExodus.Api --launch-profile https`
+- `dotnet dev-certs https --trust` trusts the .NET dev cert at the OS
+  level
+- Run with `dotnet run --project UltimaExodus.Api --launch-profile https`
   — binds both `https://localhost:7107` and `http://localhost:5223`
-- Angular's `HttpClient` call points at `https://localhost:7107/api/health`
+- Locally, Angular's `HttpClient` call targets `https://localhost:7107`
 
-Both schemes were confirmed working once the cert was trusted; HTTPS
-(7107) is the one in active use. HTTP (5223) is left available for quick
-`curl` checks. CORS policy is unaffected either way — it's scoped by the
-Angular *page's* origin (`http://localhost:4200`), not by which scheme
-the API call uses.
+In Codespaces this isn't needed at all — GitHub's port-forwarding proxy
+terminates TLS itself at the `*.app.github.dev` domain regardless of
+which scheme the underlying service speaks, so the plain-HTTP port
+(5223) is reachable at a proper `https://` forwarded URL with zero cert
+setup. See "Codespaces networking" below for how the client code picks
+the right one automatically.
 
 ### Launch profile: use `https` explicitly
 
-`launchSettings.json` has both `http` and `https` profiles.
-`dotnet run --project UltimaExodus.Api` doesn't reliably default to a
-predictable one across environments, so run it explicitly:
+`launchSettings.json` has both `http` and `https` profiles;
+`dotnet run` doesn't reliably default to a predictable one:
 
 ```bash
 dotnet run --project UltimaExodus.Api --launch-profile https
 ```
 
+This binds both ports regardless of environment, so the same command
+works whether you're then targeting `localhost:7107` (local) or the
+forwarded `-5223` URL (Codespaces).
+
+### Codespaces networking — hostname-aware API base URL
+
+Two Codespaces-specific issues had to be solved before Angular could
+reach the API from a Codespace, both worth remembering for any future
+client-side call to the API (Phase 1's map endpoint will hit the same
+pattern):
+
+**1. `localhost` doesn't mean what it means locally.** When the page is
+opened via its forwarded `*.app.github.dev` URL, the browser itself is
+running on your local machine, not inside the Codespace — so
+`https://localhost:7107` in client code tries to reach port 7107 on your
+*own* PC, not the Codespace, and fails with `ERR_CONNECTION_REFUSED`.
+Fixed by computing the API origin at runtime instead of hardcoding it —
+see `app.ts`, `apiBaseUrl()`: when `window.location.hostname` ends in
+`.app.github.dev`, swap the `-4200` segment for `-5223` to derive the
+API's forwarded hostname; otherwise fall back to
+`http://localhost:5223` for local dev.
+
+**2. Forwarded ports default to Private, which blocks cross-origin
+`fetch`.** A direct browser navigation to a private forwarded URL works
+fine (it carries your GitHub session cookie), but an in-page `fetch()`
+from a *different* forwarded origin (4200 calling 5223) does not carry
+that cookie by default. GitHub's proxy responds with a 302 to a sign-in
+page instead of reaching Kestrel at all — which then surfaces in the
+browser as a misleading CORS error, since the sign-in page obviously
+doesn't send the API's CORS headers. Fixed by setting the API's ports to
+**Public** visibility, either one-off via the Ports panel
+(right-click → Port Visibility → Public) or durably via
+`devcontainer.json`:
+
+```json
+"portsAttributes": {
+  "5223": { "visibility": "public" },
+  "7107": { "visibility": "public" }
+}
+```
+
+**Trade-off worth remembering, not just noting:** Public means anyone
+with the forwarded URL can hit that port for as long as the Codespace is
+running, no GitHub auth required. Fine for a static `/api/health`
+payload; worth reconsidering deliberately once Phase 1+ adds endpoints
+that do anything more than echo a constant.
+
+**CORS policy also had to widen** beyond the single local origin to
+accept the Codespaces domain pattern:
+
+```csharp
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularDev", policy =>
+    {
+        policy.SetIsOriginAllowed(origin =>
+            {
+                var host = new Uri(origin).Host;
+                return host == "localhost" || host.EndsWith(".app.github.dev");
+            })
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+```
+
 ### Angular: standalone components, no SSR
 
-`ng new client-angular` was scaffolded with:
-- CSS stylesheets (no SCSS — no current need for it)
-- Routing enabled (not used yet, but the eventual menu → party-org →
-  overworld screen flow will want it)
-- SSR/SSG declined — this is a local-first, single-player thin client per
-  `ARCHITECTURE.md`; server-side rendering has no benefit here
-- Standalone components (Angular CLI default) — no `NgModule`
-  boilerplate
+`ng new client-angular` was scaffolded with CSS stylesheets, routing
+enabled (not used yet), SSR/SSG declined (local-first thin client, no
+benefit from SSR), and standalone components (CLI default, no `NgModule`
+boilerplate).
+
+`angular.json` also has `"analytics": false` under `cli` — set by the
+Angular CLI itself on first run in the Codespace, not a deliberate edit;
+harmless, left as-is.
 
 ### Angular ↔ Phaser mounting pattern: confirmed
 
 A dedicated `GameCanvas` standalone component owns the `Phaser.Game`
-instance directly:
-- Created in `ngAfterViewInit()`, targeting a plain `<div #gameContainer>`
-  via `@ViewChild(..., { static: true })`
-- Torn down in `ngOnDestroy()` via `this.game?.destroy(true)` — the
-  `true` argument also removes the canvas element from the DOM, not just
-  the internal Phaser state, avoiding orphaned canvases across
-  mount/destroy cycles
-- Internal resolution 320×192, `zoom: 3` (960×576 on screen), matching
-  the existing constant used elsewhere in the project
-- Phaser pinned to `^4.1.0`, matching the version already used by the old
-  stack (`package.json`), to avoid divergence mid-migration
-
-Confirmed working: blank black canvas renders at the correct size inside
-Angular, no console errors, survives repeated refreshes.
+instance directly: created in `ngAfterViewInit()` via a
+`@ViewChild(..., { static: true })` div reference, torn down in
+`ngOnDestroy()` via `this.game?.destroy(true)` (the `true` also removes
+the canvas element from the DOM). Internal resolution 320×192, `zoom: 3`
+(960×576 on screen). Phaser pinned to `^4.1.0`, matching the old stack's
+version.
 
 ### Solution/project layout
 
-`server-dotnet/` sits at the repo root as a new top-level folder,
-alongside `client-angular/`. Neither touches the existing `src/`/`server/`
-— per the migration plan's ground rule, the old stack keeps running
-untouched until cutover (Phase 8).
-
-`UltimaExodus.Engine` is kept persistence-agnostic — it does not
-reference `UltimaExodus.Data`. `UltimaExodus.Api` references both and
-wires them together. This keeps game rules (`Engine`) testable and
-reusable independent of how state is persisted.
+`server-dotnet/` and `client-angular/` sit at the repo root as new
+top-level folders; neither touches the existing `src/`/`server/` — old
+stack keeps running untouched until cutover (Phase 8).
+`UltimaExodus.Engine` stays persistence-agnostic (no reference to
+`UltimaExodus.Data`); `UltimaExodus.Api` references both and wires them
+together.
 
 ---
 
 ## Devcontainer
 
 `.devcontainer/devcontainer.json` provisions Node 24, Python 3.12, .NET
-10, and the Angular CLI. Current full config:
+10, and the Angular CLI, and installs `client-angular/`'s dependencies
+explicitly (not relying on the root `npm install`, which doesn't recurse
+into nested `package.json` files):
 
 ```json
 {
@@ -146,43 +197,50 @@ reusable independent of how state is persisted.
       "version": "10.0"
     }
   },
-  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli"
+  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli && (cd client-angular && npm install)",
+  "portsAttributes": {
+    "5223": { "visibility": "public" },
+    "7107": { "visibility": "public" }
+  }
 }
 ```
 
-**Not yet verified against a fresh Codespace build** — all of Phase 0 was
-developed locally (Windows PC), not in Codespaces. Next step: commit and
-merge this branch, then rebuild the Codespace once to confirm a clean
-environment picks up .NET, the Angular CLI, and both new projects with no
-manual steps.
+**Verified against a full rebuild** — `dotnet --version` → `10.0.400`,
+`ng version` → CLI `22.1.5`/Node `24.18.0`, `client-angular/node_modules`
+populated by `postCreateCommand`, both servers ran and talked to each
+other successfully over Codespaces' forwarded ports.
 
-**Known gap to check at that rebuild:** the top-level `npm install` in
-`postCreateCommand` will not install `client-angular/`'s dependencies —
-that's a separate `package.json` in its own folder. Likely fix: extend
-`postCreateCommand` with something like
-`&& (cd client-angular && npm install)`. Not yet applied since this
-hasn't been validated end-to-end.
+### Gotchas hit along the way
 
-**Gotcha to watch for during that rebuild:** `ng serve` (esbuild/Vite
-under the hood) doesn't always pick up a newly-`npm install`ed package
-mid-session — after adding `phaser` locally, the dev server kept serving
-the old bundle until restarted. If Phaser or any new dependency seems to
-have no effect after installing it in a fresh container, restart
-`ng serve` before assuming something's actually broken.
+- **`ng serve` doesn't always pick up a newly-`npm install`ed package
+  mid-session** (esbuild/Vite caching) — after adding `phaser` locally,
+  the dev server kept serving the old bundle until restarted. Restart
+  `ng serve` if a new dependency seems to have no effect.
+- **Git LFS pre-push hook blocks pushes if `git-lfs` isn't installed in
+  the Codespace**, even though this repo doesn't actually use LFS for
+  anything (no `.gitattributes` LFS filters). Fix:
+  `sudo apt-get install -y git-lfs && git lfs install`. One-time per
+  Codespace; harmless to leave installed even though unused.
+- **`dotnet` commands run from the repo root (instead of
+  `server-dotnet/`) create a stray `dotnet/runfile-discovery/` cache
+  folder at the root.** Gitignored now (root `.gitignore`), but the
+  better habit is running `dotnet build`/`dotnet run` from inside
+  `server-dotnet/` consistently, same as established since Step 1.
 
 ---
 
 ## Open questions still outstanding
 
-Carried over from `ARCHITECTURE.md`'s "Open questions / not yet decided"
-— resolved during Phase 0:
-
-- ~~Angular ↔ Phaser mounting pattern~~ — resolved above
-- ~~C# solution/project layout~~ — resolved above
+Resolved during Phase 0:
+- ~~Angular ↔ Phaser mounting pattern~~
+- ~~C# solution/project layout~~
+- ~~Local vs. Codespaces networking for client → API calls~~
 
 Still open, out of scope until later phases:
-
 - Effect-type vocabulary — not in scope until combat implementation
   (Phase 7+)
 - Whether hero/party state ownership questions from the old architecture
   carry over — not in scope until Phase 5
+- Whether the Public port-visibility trade-off (see "Codespaces
+  networking" above) needs revisiting once Phase 1 adds real endpoints
+  beyond the static health check
