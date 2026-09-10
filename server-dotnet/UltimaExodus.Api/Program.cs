@@ -1,3 +1,5 @@
+using UltimaExodus.Data.Maps;
+using UltimaExodus.Engine.Maps;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +32,30 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AngularDev");
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
+{
+    if (!Enum.TryParse<MapCategory>(category, ignoreCase: true, out var parsedCategory))
+    {
+        return Results.BadRequest($"Unknown map category: {category}");
+    }
+
+    if (parsedCategory != MapCategory.World)
+    {
+        // Only World is wired up so far — Town/Castle/Dungeon/Conflict come in step 7.
+        return Results.Problem($"Category '{parsedCategory}' is not yet supported", statusCode: 501);
+    }
+
+    try
+    {
+        var mapData = MapSourceLoader.LoadWorldMap(mapId);
+        return Results.Ok(mapData);
+    }
+    catch (FileNotFoundException)
+    {
+        return Results.NotFound($"Map not found: {mapId}");
+    }
+});
 
 app.Run();
 
