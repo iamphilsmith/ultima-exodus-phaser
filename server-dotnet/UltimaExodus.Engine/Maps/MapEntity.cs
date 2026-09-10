@@ -1,4 +1,4 @@
-namespace UltimaExodus.Engine.Terrain;
+namespace UltimaExodus.Engine.Maps;
 
 public record MapEntity
 (    string Id,

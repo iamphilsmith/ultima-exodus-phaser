@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UltimaExodus.Engine\UltimaExodus.Engine.csproj" />
+    <ProjectReference Include="..\UltimaExodus.Data\UltimaExodus.Data.csproj" />
   </ItemGroup>
 
 </Project>
