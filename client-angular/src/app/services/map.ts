@@ -23,19 +23,30 @@ export interface MapData {
 export class MapService {
   private http = inject(HttpClient);
   private cache = new Map<string, MapData>();
+  private pending = new Map<string, Promise<MapData>>();
 
   async getMap(category: MapCategory, mapId: string): Promise<MapData> {
     const key = `${category}:${mapId}`;
+
     const cached = this.cache.get(key);
     if (cached) {
       return cached;
     }
 
-    const categoryName = MapCategory[category].toLowerCase();
-    const url = `${apiBaseUrl()}/api/maps/${categoryName}/${mapId}`;
-    const mapData = await firstValueFrom(this.http.get<MapData>(url));
+    const inFlight = this.pending.get(key);
+    if (inFlight) {
+      return inFlight;
+    }
 
-    this.cache.set(key, mapData);
-    return mapData;
+    const request = firstValueFrom(this.http.get<MapData>(
+      `${apiBaseUrl()}/api/maps/${MapCategory[category].toLowerCase()}/${mapId}`
+    )).then(mapData => {
+      this.cache.set(key, mapData);
+      this.pending.delete(key);
+      return mapData;
+    });
+
+    this.pending.set(key, request);
+    return request;
   }
 }
