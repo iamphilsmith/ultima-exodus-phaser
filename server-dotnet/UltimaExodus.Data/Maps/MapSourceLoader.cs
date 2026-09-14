@@ -34,4 +34,25 @@ public static class MapSourceLoader
             Tiles: tiles
         );
     }
+
+    public static MapData LoadMap(MapCategory category, string mapId)
+    {
+        var path = Path.Combine(SourceFolder, $"{mapId}.json");
+        var json = File.ReadAllText(path);
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var tiledMap = JsonSerializer.Deserialize<TiledMapJson>(json, options)
+            ?? throw new InvalidOperationException($"Failed to parse map source: {mapId}");
+
+        var layer = tiledMap.Layers.First();
+        var tiles = layer.Data.Select(raw => raw - 1).ToArray();
+
+        return new MapData(
+            MapId: mapId,
+            Category: category,
+            Width: tiledMap.Width,
+            Height: tiledMap.Height,
+            Tiles: tiles
+        );
+    }
 }

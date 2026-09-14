@@ -40,15 +40,9 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
         return Results.BadRequest($"Unknown map category: {category}");
     }
 
-    if (parsedCategory != MapCategory.World)
-    {
-        // Only World is wired up so far — Town/Castle/Dungeon/Conflict come in step 7.
-        return Results.Problem($"Category '{parsedCategory}' is not yet supported", statusCode: 501);
-    }
-
     try
     {
-        var mapData = MapSourceLoader.LoadWorldMap(mapId);
+        var mapData = MapSourceLoader.LoadMap(parsedCategory, mapId);
         return Results.Ok(mapData);
     }
     catch (FileNotFoundException)
