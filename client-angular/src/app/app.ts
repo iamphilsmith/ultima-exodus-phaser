@@ -23,10 +23,14 @@ export class App implements OnInit {
         error: (error) => this.healthStatus.set(`error: ${error.message}`),
       });
 
-    const first = await this.mapService.getMap(MapCategory.World, 'world-sosaria');
+//    const first = await this.mapService.getMap(MapCategory.World, 'world-sosaria');
+//    console.log('Map loaded:', first);
+    const first = await this.mapService.getMap(MapCategory.Town, 'town-lcb');
     console.log('Map loaded:', first);
 
-    const second = await this.mapService.getMap(MapCategory.World, 'world-sosaria');
+//    const second = await this.mapService.getMap(MapCategory.World, 'world-sosaria');
+//    console.log('Map loaded (should be cached):', second);
+    const second = await this.mapService.getMap(MapCategory.Town, 'town-lcb');
     console.log('Map loaded (should be cached):', second);
   }
 }

@@ -2,18 +2,133 @@
 
 A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeScript.
 
-> **Note:** this document describes the **current implementation** — the thick-client
-> Phaser + tRPC + SQLite stack actually running in this repo today. A migration to an
-> Angular + Phaser client with a server-authoritative C#/.NET backend is planned (as a
-> learning exercise); see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for that target design.
+> **Note:** this document describes the **old implementation** — the thick-client
+> Phaser + tRPC + SQLite stack originally built in this repo — in most sections below,
+> **except** the "New Stack Progress" section immediately following this banner, which
+> tracks the actual state of the in-progress migration to Angular + C#/.NET. See
+> [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the migration's target design and
+> [`MIGRATION_PLAN.md`](./MIGRATION_PLAN.md) for build sequencing and progress.
 > Most rendering/asset knowledge below (charset handling, dungeon renderer spec, map
 > formats) is expected to carry over largely unchanged; the parts that describe
-> server responsibilities and the thick-client philosophy will be superseded once the
-> migration begins. This doc will be updated in step with that work.
+> server responsibilities and the thick-client philosophy are being superseded as the
+> migration proceeds.
 
 ---
 
-## Tech Stack
+## New Stack Progress (Angular + C#/.NET)
+
+> This section is the living cross-session record of the migration described in
+> `ARCHITECTURE.md`. Update it at the end of each session/phase.
+
+### Solution layout
+
+```
+server-dotnet/
+  UltimaExodus.Engine/   — domain logic, no dependencies on the other two projects
+    Terrain/             — TileProperties, TileCatalogue
+    Maps/                — MapCategory, MapData, MapEntity
+  UltimaExodus.Data/     — data loading; depends on Engine
+    Maps/                — TiledMapJson, MapSourceLoader
+    MapSources/           — Tiled JSON source files, copied here from assets/maps/
+                            (copy-to-output configured in UltimaExodus.Data.csproj)
+  UltimaExodus.Api/      — HTTP endpoints; depends on both Engine and Data
+
+client-angular/
+  src/app/
+    services/map.ts      — MapService, plus MapCategory/MapData TS mirrors of the C# types
+    utils/api-base-url.ts — apiBaseUrl(), shared between App's health check and MapService
+    game-canvas/          — hosts the Phaser instance (Phase 0 scaffolding)
+```
+
+### Phase 0 — Scaffolding ✅ complete
+
+- `UltimaExodus.sln` with the three-project split above; `GET /api/health` confirms
+  the API runs standalone
+- Angular workspace in `client-angular/`, confirmed with `ng serve`
+- Angular → API wired via `HttpClient`, health status displayed on screen
+- Phaser mounts inside an Angular component (`GameCanvas`) at the game's native
+  320×192 internal resolution, 3x zoom — empty instance only, no sprites yet
+- Codespaces networking resolved: ports 5223 (API) and 7107 (API https) are public,
+  CORS policy accepts `*.app.github.dev` origins, and `apiBaseUrl()` detects the
+  Codespaces hostname and swaps the Angular port segment for the API's
+
+### Phase 1 — Static map delivery ✅ complete
+
+Built at finer granularity than `MIGRATION_PLAN.md` originally specified — see that
+file's Phase 1 section for the corrected/expanded step list. Summary of what exists:
+
+- **`TileCatalogue`** (`UltimaExodus.Engine/Terrain/`) — static `Dictionary<int, TileProperties>`
+  lookup for `Solid` and `VisionBlocking`, scoped to overworld tiles only for now
+  (water, forest, mountains, town/castle entrance). Unlisted tiles default to
+  non-solid, non-vision-blocking. **Conflict maps must be folded into this catalogue
+  in the same pass** when it's expanded to town/castle/dungeon — not added later.
+- **`MapCategory` / `MapData` / `MapEntity`** (`UltimaExodus.Engine/Maps/`) — per
+  `ARCHITECTURE.md`. `MapData.Tiles` holds raw 0-based tile indices; walkability and
+  vision-blocking are looked up separately via `TileCatalogue`, not baked into the array.
+- **`MapSourceLoader.LoadMap(MapCategory, string mapId)`** (`UltimaExodus.Data/Maps/`) —
+  reads Tiled JSON from `MapSources/`, deserializes case-insensitively (Tiled's JSON
+  uses lowercase property names), and converts `tile.index - 1` **server-side** so the
+  client never has to handle Tiled's 1-based numbering. Generalized across all
+  categories after proving out on two map types (`world-sosaria`, `town-lcb`).
+- **`GET api/maps/{category}/{mapId}`** — returns `MapData` as JSON. `400` for an
+  unrecognized category string, `404` if the map file doesn't exist. Accepts every
+  `MapCategory` including `Conflict`, but conflict-map *sourcing/selection* logic
+  doesn't exist yet (that's `ConflictMapSelector`, still Phase 7 work).
+- **Angular `MapService`** (`client-angular/src/app/services/map.ts`) — fetch-and-cache
+  service, singleton (`@Service()`), in-memory cache keyed by `category:mapId`. Also
+  tracks in-flight requests per key so two concurrent calls for the same uncached map
+  share one HTTP request instead of firing two — a real race condition found and fixed
+  during verification (see Gotchas below), not just a caching nicety.
+- Round trip confirmed via the Network tab for both `world-sosaria` and `town-lcb`:
+  single request per uncached map, zero requests on a cache hit, one request even
+  when two calls for the same map fire back-to-back without awaiting the first.
+
+### Environment / tooling notes specific to the new stack
+
+- **Angular 22 introduced a genuine `@Service()` decorator**, replacing
+  `@Injectable({ providedIn: 'root' })` for the common case. Services generated with
+  `ng generate service` now scaffold as `<name>.ts` (no `.service.ts` suffix) and use
+  `@Service()`. Constructor-based DI isn't supported under `@Service()` — use
+  `inject()` instead (e.g. `private http = inject(HttpClient);`). Components (`@Component`)
+  are unaffected and can still use constructor injection — the two styles coexist in
+  this codebase (`App` uses constructor DI, `MapService` uses `inject()`).
+- **`angular.json`'s default bundle budget (500kb warning / 1mb error) is too small
+  for a Phaser-based game.** Raised to 2mb/3mb in the `production` build config's
+  `budgets` array. `ng build` (not `ng serve`) enforces this, so it can surprise you
+  the first time you run a full build.
+- `ng build` is a full AOT/minification pass and is meaningfully slower than
+  `ng serve`'s dev builds — expected, not a regression. Use `ng serve` for iteration;
+  reserve `ng build` for periodic checkpoints.
+
+### Gotchas hit during Phase 0 / Phase 1
+
+- **Newly created files may not be visible to the compiler until staged in git** —
+  likely an editor-flush timing issue, not a real dotnet/git interaction. Running
+  `git status` or `git add` seems to force a fresh disk read that surfaces the file.
+- **Project references are directional and easy to get backwards** —
+  `Engine ← Data ← Api`, never the reverse. Adding a reference the wrong way
+  (e.g. `Engine → Data`) produces a circular-dependency error at restore, not a
+  clean failure, which can be confusing to debug.
+- **`System.Text.Json` is case-sensitive by default** — Tiled's JSON uses lowercase
+  property names (`width`, `layers`, `data`), which silently fail to bind to PascalCase
+  C# properties unless `PropertyNameCaseInsensitive = true` is set. Silent failure here
+  means an empty list/zero values, not an exception — easy to miss until something
+  downstream (like `.First()` on an empty `Layers` list) throws.
+- **`UseHttpsRedirection()` causes confusing 307 redirects during curl testing** — hit
+  the plain `http://localhost:5223` URL directly rather than https when testing with
+  curl.
+- **Codespaces networking**: hardcoded `localhost` URLs fail because the browser runs
+  on the local machine, not in the container; misleading CORS errors can actually be
+  port-visibility issues. `apiBaseUrl()` (in `client-angular/src/app/utils/`) detects
+  the Codespaces hostname and swaps port segments; used by both the health check and
+  `MapService`.
+- **`db:push` must run on every fresh environment** because the SQLite `.db` file is
+  gitignored. *(Carried over from the old stack; likely to resurface once the new
+  stack adds its own persistence layer in Phase 3.)*
+
+---
+
+## Tech Stack (old stack)
 
 | Layer | Technology |
 |---|---|
@@ -28,14 +143,16 @@ A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeS
 
 ## Architecture Decisions
 
-*(Current implementation. The thick-client/dumb-server split below is being replaced
-by a server-authoritative model — see [`ARCHITECTURE.md`](./ARCHITECTURE.md). The
-rendering-only decisions here, e.g. camera and Phaser-canvas UI, are expected to hold
-regardless of backend, since they concern the client's display layer only.)*
+*(Old implementation. The thick-client/dumb-server split below is being replaced
+by a server-authoritative model — see [`ARCHITECTURE.md`](./ARCHITECTURE.md);
+Phase 0 and Phase 1 of that migration are already complete, see "New Stack Progress"
+above. The rendering-only decisions here, e.g. camera and Phaser-canvas UI, are
+expected to hold regardless of backend, since they concern the client's display
+layer only.)*
 
 - **Thick client** — all game logic runs in Phaser. The server is a dumb persistence layer only. *(superseded — see `ARCHITECTURE.md`)*
-- **Save on every move** — hero position is saved to SQLite after every tile movement via tRPC. *(current stack only)*
-- **Single player row** — hero is always `id: 'player'`, upserted on save. *(current stack only)*
+- **Save on every move** — hero position is saved to SQLite after every tile movement via tRPC. *(old stack only)*
+- **Single player row** — hero is always `id: 'player'`, upserted on save. *(old stack only)*
 - **No Phaser camera follow** — camera is fixed at 0,0. The tile grid redraws around the hero position instead.
 - **Full Phaser rendering** — no HTML/CSS UI. Everything including text, borders, and panels is rendered inside the Phaser canvas.
 
@@ -108,7 +225,9 @@ Map is 11 x 11 tiles, each tile is 16px x 16px
 - All maps: 64×64 tiles
 - Overworld wraps at edges — hero can walk off any edge and appear on the opposite side
 - Town/castle maps do not wrap — out-of-bounds tiles hidden (alpha 0); walking off any edge exits back to overworld
-- Tile index offset: `tile.index - 1` (Tiled is 1-based, Phaser frames are 0-based)
+- Tile index offset: `tile.index - 1` (Tiled is 1-based, Phaser frames are 0-based).
+  In the new stack, this conversion happens server-side in `MapSourceLoader` —
+  see "New Stack Progress" above.
 
 ---
 
@@ -116,8 +235,8 @@ Map is 11 x 11 tiles, each tile is 16px x 16px
 
 | File | Location | Description |
 |---|---|---|
-| `shapes_ega_final.png` | `assets/sprites/` | 80 terrain tiles, 16×16px, 10 cols × 8 rows, RGB solid background |
-| `charset_ega_final.png` | `assets/sprites/` | 128 characters, 16×16px source frames, 16 cols × 8 rows, RGBA transparent background. Loaded with `frameWidth: 16, frameHeight: 16` giving 128 frames. Rendered at 8×8 via `setDisplaySize(8, 8)` in `writeText` and `drawLogPanel`. |
+| `shapes.png` | `assets/sprites/` | 80 terrain tiles, 16×16px, 10 cols × 8 rows, RGB solid background |
+| `charset.png` | `assets/sprites/` | 128 characters, 16×16px source frames, 16 cols × 8 rows, RGBA transparent background. Loaded with `frameWidth: 16, frameHeight: 16` giving 128 frames. Rendered at 8×8 via `setDisplaySize(8, 8)` in `writeText` and `drawLogPanel`. |
 | `world-sosaria.json` | `assets/maps/worlds/` | Tiled map JSON, 64×64, overworld Sosaria |
 | `world-ambrosia.json` | `assets/maps/worlds/` | Tiled map JSON, 64×64, layer `ambrosia-layer`, tileset `ambrosia` |
 | `castle-british.json` | `assets/maps/castles/` | Tiled map JSON, 64×64 |
@@ -169,6 +288,10 @@ const EGA_WHITE = 0xfcfcfc
 | Forest (3) | vision-blocking: true |
 | Town/castle (10) | solid: false |
 
+The new stack's equivalent is `TileCatalogue` (`UltimaExodus.Engine/Terrain/`) — see
+"New Stack Progress" above. Same source values, ported into a C# lookup rather than
+inline map-property reads.
+
 ---
 
 ## Fog of War
@@ -180,7 +303,7 @@ const EGA_WHITE = 0xfcfcfc
 
 ---
 
-## Current Status
+## Current Status (old stack)
 
 ### Working ✅
 - Map renders with EGA tileset
@@ -203,14 +326,25 @@ const EGA_WHITE = 0xfcfcfc
 - Town and castle enter/exit fully wired and confirmed
 - `WorldScene` reduced to permanent shell — border, panels, log, input wiring, view transitions
 - `world-locations.ts` — all Sosaria overworld coordinates confirmed and wired
+- `ConflictView` exists and is wired into `WorldScene` — attack input
+  (`startAttack`/`cancelAttack`/direction-based `handleAttack`) is fully
+  plumbed through `InputService` into the active view, and `enterConflict()`
+  loads a `ConflictMapConfig` (from a `data/conflict-maps.ts` module, via
+  `CONFLICT_MAPS`/`getDefaultConflictMap()`) and transitions into it. **Not
+  yet confirmed:** whether `ConflictView` itself renders a real combat loop
+  or is still a positions-only stub — `ConflictView.ts` hasn't been reviewed
+  directly, only its usage from `WorldScene.ts`. Confirm before relying on
+  this note for Phase 2/7 scoping.
 
 ### Still To Do 📋
-- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` (open questions tracked there)
+- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phase 0 and Phase 1 complete — see "New Stack Progress" above)
 - Wire real moon phase data to `drawMoonPhase()`
 - Wire real wind direction data to `drawWindDirection()`
 - Populate party panel from real character data (BCD-encoded, from ROSTER.ULT / PARTY.ULT)
 - Add fog of war to `TownView`
-- Step ④: `CombatView` — static 11×11 map, party + monster positions, no fog
+- Confirm exact state of `ConflictView`'s combat loop (see note above) — the
+  old "Step ④: CombatView — static map, no fog, not started" line here was
+  stale; some conflict/attack plumbing already exists
 - Step ⑤: `DungeonView` — first-person renderer (see Dungeon View section below)
 - Ambrosia shrine entry/exit coordinates (stubbed)
 - Eventually: tile animation, character sprites, title screen, NPC dialog system
@@ -245,7 +379,7 @@ const nameLine = char.name.padStart(char.name.length + pad).padEnd(nameCol) + ch
 
 ---
 
-## Key Files
+## Key Files (old stack)
 
 ```
 src/
@@ -255,24 +389,28 @@ src/
   mapviews/MapView.ts           — interface: load(), handleMove(), handleInteract(), teardown()
   mapviews/OverworldView.ts     — wrapping movement, fog of war, save on move
   mapviews/TownView.ts          — non-wrapping movement, edge-exit back to overworld
+  mapviews/ConflictView.ts      — combat map view; extent of implementation not yet confirmed (see "Working ✅" note)
+  data/conflict-maps.ts         — CONFLICT_MAPS list + getDefaultConflictMap(); ConflictMapConfig type
   services/InputDirection.ts    — InputDirection enum + offset/name lookup tables
-  services/InputService.ts      — keyboard → named action emitter
+  services/InputService.ts      — keyboard → named action emitter; also emits onAttack/onCancel (direction-based attack flow), not just move/interact
   lib/trpc.ts                   — tRPC client
 server/
   index.ts                  — Express + tRPC server on port 3000
   trpc.ts                   — tRPC init
   routers/hero.ts           — load/save procedures
-  db/index.ts               — Drizzle + better-sqlite3 client
-  db/schema.ts              — heroes table (id, tileX, tileY, mapId)
+  db/index.ts                — Drizzle + better-sqlite3 client
+  db/schema.ts               — heroes table (id, tileX, tileY, mapId)
 drizzle.config.ts           — points to ./game.db
 vite.config.ts              — proxy /trpc → localhost:3000
 ```
 
+See "New Stack Progress" above for the equivalent new-stack file layout.
+
 ---
 
-## Architecture — Map System
+## Architecture — Map System (old stack)
 
-*(This section describes the `MapView` pattern within the current Phaser/tRPC stack.
+*(This section describes the `MapView` pattern within the old Phaser/tRPC stack.
 It's a client-side rendering pattern, so it's expected to remain relevant after the
 server-side migration described in `ARCHITECTURE.md` — modes will still map to
 `MapView` implementations, just driven by server snapshots instead of local state.)*
@@ -289,7 +427,7 @@ MapView (interface)   — load(), handleMove(), handleInteract(), teardown()
       │
       ├── OverworldView   wrapping movement, fog of war, save on move          ✅
       ├── TownView        no wrapping, walk off edge exits to overworld         ✅
-      ├── CombatView      static 11×11 map, party + monster positions           📋
+      ├── ConflictView    static 11×11 map, party + monster positions           ❓ exists, wired in; combat-loop completeness unconfirmed
       └── DungeonView     first-person renderer                                 📋
 ```
 
@@ -320,7 +458,7 @@ private async enterLocation(def: LocationDef): Promise<void> {
 |---|---|---|---|
 | OverworldView | Yes | None (top level) | Raycasting, vision-blocking tiles |
 | TownView | No | Walk off any edge → return to Overworld | TBD |
-| CombatView | No | Win/lose/flee condition | None (full visibility) |
+| ConflictView | No | Win/lose/flee condition (assumed — unconfirmed) | None (full visibility, assumed) |
 | DungeonView | No | Ladder up from level 1 | Render distance only |
 
 ---
@@ -497,7 +635,7 @@ Out-of-bounds cells (window extends past 16×16 boundary) are filled with `0x80`
 
 ---
 
-## Commands
+## Commands (old stack)
 
 ```bash
 npm run dev          # start both client and server
@@ -507,12 +645,17 @@ npm run db:push      # sync schema to game.db
 npm run db:generate  # generate migration files
 ```
 
+See "New Stack Progress" above for the new stack's equivalent commands
+(`dotnet run --project UltimaExodus.Api`, `ng serve`).
+
 ---
 
 ## Reference Documents
 
 | File | Description |
 |---|---|
+| `ARCHITECTURE.md` | Target architecture for the Angular + C#/.NET migration |
+| `MIGRATION_PLAN.md` | Step-by-step migration sequencing and progress |
 | `dungeon-view.md` | Full dungeon renderer spec — cube grid model, projection constants, face rules, door rules |
 | `dungeon-cell-values.md` | Cell value lookup table — ULT byte → render behaviour mapping |
 | `original-file-format.md` | Tile mapping reference with confidence levels (HIGH/MEDIUM/LOW) |

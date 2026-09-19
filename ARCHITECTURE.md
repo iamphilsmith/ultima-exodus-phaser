@@ -1,17 +1,19 @@
 # Ultima Exodus — Architecture
 
-> **Status: planned migration.** This document describes the target architecture
-> for a rewrite from the current thick-client (Phaser + tRPC + SQLite) stack to
+> **Status: migration underway.** This document describes the target architecture
+> for a rewrite from the old thick-client (Phaser + tRPC + SQLite) stack to
 > a thin-client / server-authoritative stack, undertaken primarily as a vehicle
-> to learn Angular and C#/.NET. It does not describe the code in this repo today —
-> see `CONTEXT.md` for current implementation state. Sections below will be updated
-> as each part is actually built.
+> to learn Angular and C#/.NET. **Phase 0 (scaffolding) and Phase 1 (static map
+> delivery — see "Map delivery" below) are complete** and match what's described
+> here; everything else on this page is still target design, not yet built.
+> See `CONTEXT.md` for full current implementation state and `MIGRATION_PLAN.md`
+> for build sequencing. Sections below are updated as each part is actually built.
 
 ---
 
 ## Why this shift
 
-The current architecture (documented in `CONTEXT.md`) is thick-client: all game
+The old architecture (documented in `CONTEXT.md`) is thick-client: all game
 logic runs in Phaser, the server is a dumb persistence layer. That was a
 reasonable starting point, but the project's purpose is to learn interesting
 technology, not just to finish a game. The new direction:
@@ -58,7 +60,7 @@ not a concern worth designing around.
   an encounter, so the server picks the map and hands the client its ID
 - The full action log — returned in its entirety each turn, so the server has
   complete control over its content (this replaces the client-side log buffer
-  in the current implementation)
+  in the old implementation)
 
 ### Client-owned (pure UI/rendering, no round trip)
 
@@ -90,18 +92,21 @@ the same snapshot shape as any successful action.
 
 ## Map delivery
 
-Static map geometry (tiles) and dynamic map contents (monsters, whirlpools,
-NPCs) have different lifetimes and are delivered differently.
+**Status: implemented (Phase 1).** Static map geometry (tiles) and dynamic map
+contents (monsters, whirlpools, NPCs) have different lifetimes and are
+delivered differently.
 
 - **Static geometry** — fetched once per `(category, mapId)` via a map
   endpoint, cached client-side for the session (in-memory; no need for
-  persistent browser storage given local-first usage). Covers world, town,
-  castle, dungeon, and conflict maps under one endpoint shape.
+  persistent browser storage given local-first usage). The endpoint accepts
+  any `MapCategory`, including `Conflict`.
 - **Dynamic entities** — monster/whirlpool/NPC positions change every turn,
   so they travel in the per-action state snapshot, not the map payload.
   Entities carry a stable `Id` per spawn so the client can distinguish "this
   monster moved" from "a new one appeared," and so combat effects can
-  reference a specific entity by ID.
+  reference a specific entity by ID. `MapEntity` is defined but not yet
+  populated by anything — that starts once dynamic entities appear in a
+  later phase.
 
 ```csharp
 public enum MapCategory { World, Town, Castle, Dungeon, Conflict }
@@ -111,7 +116,11 @@ public record MapData(
     MapCategory Category,
     int Width,
     int Height,
-    int[] Tiles   // walkability/interactivity derived from tile type, from a shared tile catalogue
+    int[] Tiles   // Raw tile indices, 0-based (Tiled's 1-based index minus 1,
+                  // converted server-side by the loader — the client never
+                  // handles Tiled's numbering). Walkable/solid and vision-
+                  // blocking are NOT baked in here; they're looked up per-tile
+                  // via the shared tile catalogue below.
 );
 
 public record MapEntity(
@@ -126,9 +135,33 @@ public record MapEntity(
 GET api/maps/{category}/{mapId} -> MapData
 ```
 
+### Tile catalogue
+
+A static lookup (`TileCatalogue` in `UltimaExodus.Engine/Terrain/`) maps a raw
+tile index to two properties:
+
+- **Solid** — blocks movement. The server remains sole authority on movement
+  validation regardless of what the client believes; this property is sent to
+  the client mainly for future UX polish (e.g. pre-emptively greying out an
+  invalid direction before a round trip).
+- **VisionBlocking** — blocks fog-of-war raycasting. Required client-side,
+  since the vision algorithm runs per-frame locally and can't afford a round
+  trip per glance.
+
+Any tile index not explicitly listed defaults to non-solid, non-vision-blocking.
+Currently scoped to overworld tiles only. **When expanded to cover
+town/castle/dungeon, conflict maps must be included in the same catalogue
+expansion pass** — not treated as a later addition — since conflict encounters
+will need the same walkability/vision data once combat is implemented.
+
+The endpoint will attempt to load a source file for any `MapCategory`
+including `Conflict`, but conflict-map *sourcing/selection* (deciding which
+map to serve for a given encounter) isn't implemented yet — that's
+`ConflictMapSelector`'s job, still to come.
+
 Conflict maps are the one category the client never requests by name up
-front — the server selects the `MapId` when an encounter triggers (see
-below) and hands it to the client inside the encounter snapshot.
+front — the server selects the `MapId` when an encounter triggers and hands
+it to the client inside the encounter snapshot.
 
 ---
 
@@ -179,6 +212,9 @@ public static class ConflictMapSelector
 }
 ```
 
+**Not yet implemented** — this class doesn't exist in the codebase yet; it's
+target design, slotted for Phase 7 per `MIGRATION_PLAN.md`.
+
 ---
 
 ## Combat & effect sequencing
@@ -216,15 +252,27 @@ public record GameStateSnapshot(
 );
 ```
 
-Returned in full on every action — no diffing on either side.
+Returned in full on every action — no diffing on either side. Not yet
+implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
 
 ---
 
+## Resolved during Phase 0 / Phase 1
+
+- **C# solution/project layout**: `UltimaExodus.Engine` (domain logic, no
+  dependencies on the other two), `UltimaExodus.Data` (data loading —
+  depends on `Engine`), `UltimaExodus.Api` (HTTP endpoints — depends on
+  both). See `CONTEXT.md` for full current-state detail.
+- **Angular ↔ Phaser mounting pattern**: resolved in Phase 0 — Phaser mounts
+  inside an Angular component (`GameCanvas`) at the game's native 320×192
+  internal resolution, 3x zoom.
+
 ## Open questions / not yet decided
 
-- Angular ↔ Phaser mounting pattern
-- C# solution/project layout (engine vs. API vs. persistence separation)
 - Effect-type vocabulary (see Combat section above)
-- Whether hero/party state ownership questions from the previous
-  architecture (see `CONTEXT.md`) carry over in modified form once the
-  server is fully authoritative
+- Whether hero/party state ownership questions from the old architecture
+  (see `CONTEXT.md`) carry over in modified form once the server is fully
+  authoritative
+- Deployment topology: whether Angular `dist/` will be served by the .NET app
+  (same origin, eliminating CORS in production) — deferred but acknowledged
+  as an important distinction to settle before cutover

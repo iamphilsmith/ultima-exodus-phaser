@@ -3,9 +3,11 @@
 A single-player RPG built with Phaser 4 and TypeScript, inspired by the classic Ultima series.
 
 > **Note:** everything below describes the stack and setup **currently running in this
-> repo**. A migration to an Angular + Phaser client with a C#/.NET server is planned
-> as a learning exercise — see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the target
-> design. This README will be updated once that migration is actually underway.
+> repo** — this is still the active game a player would run today. A migration to an
+> Angular + Phaser client with a C#/.NET server is **underway** as a learning exercise;
+> see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the target design and
+> [`MIGRATION_PLAN.md`](./MIGRATION_PLAN.md) for progress. This README will describe
+> the new stack once cutover is complete.
 
 Original game had the following dimensions. 
 // Left border: 8 px
@@ -60,6 +62,9 @@ root/
   drizzle.config.ts # Drizzle ORM configuration
   vite.config.ts    # Vite bundler configuration
 ```
+
+This describes the old stack only. The new stack under active development lives
+in `client-angular/` and `server-dotnet/` — see `CONTEXT.md` for its structure.
 
 ---
 
