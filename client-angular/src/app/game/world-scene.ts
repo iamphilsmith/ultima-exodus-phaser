@@ -9,12 +9,18 @@ import {
   MAP_PX,
   PANEL_X,
   PARTY_H,
+  LOG_Y,
+  LOG_ROWS,
   EGA_BLUE,  
   EGA_CYAN,
-  EGA_WHITE } from './shell-layout';
-import { writeText } from './bitmap-text';
+  EGA_WHITE,
+  CHAR_ARROW_RIGHT } from './shell-layout';
+import { charFrame,writeText } from './bitmap-text';
 
 export class WorldScene extends Phaser.Scene {
+  private logLines: Phaser.GameObjects.Image[][] = [];
+  private logMessages: string[] = ['', '', '', '', '', '', ''];
+
   constructor() {
     super('world');
   }
@@ -33,6 +39,15 @@ export class WorldScene extends Phaser.Scene {
     this.drawMoonPhase();
     this.drawWindDirection();
     this.drawPartyPanel();
+    this.drawLogPanel();
+    this.refreshLog();
+
+    // TEMPORARY: proves log scrolling. Remove once real logs land in Phase 3 step 20.
+    let counter = 0;
+    this.input.keyboard?.on('keydown-SPACE', () => {
+      counter += 1;
+      this.addLogMessage(`Test message ${counter}`);
+    });
   }
 
   private drawBorder(): void {
@@ -89,5 +104,51 @@ export class WorldScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(30);
     g.fillStyle(EGA_BLUE);
     g.fillRect(PANEL_X, PARTY_H, CHAR_W * PANEL_W_CHARS, BORDER);
+  }
+
+  private drawLogPanel(): void {
+    for (let row = 0; row < LOG_ROWS; row++) {
+      this.logLines[row] = [];
+      for (let col = 0; col < 15; col++) {
+        const img = this.add.image(
+          PANEL_X + col * CHAR_W,
+          LOG_Y + row * CHAR_H,
+          'chars',
+          0
+        );
+        img.setOrigin(0, 0);
+        img.setDisplaySize(CHAR_W, CHAR_H);
+        img.setDepth(31);
+        img.setTint(EGA_CYAN);
+        img.setVisible(false);
+        this.logLines[row][col] = img;
+      }
+    }
+  }
+
+  public addLogMessage(msg: string): void {
+    this.logMessages.push(msg);
+    if (this.logMessages.length > LOG_ROWS) {
+      this.logMessages = this.logMessages.slice(-LOG_ROWS);
+    }
+    this.refreshLog();
+  }
+
+  private refreshLog(): void {
+    this.logMessages.forEach((msg, row) => {
+      const line = this.logLines[row];
+      if (!line) return;
+      line[0].setFrame(CHAR_ARROW_RIGHT);
+      line[0].setVisible(true);
+      for (let col = 1; col < 15; col++) {
+        const ch = msg[col - 1];
+        if (ch) {
+          line[col].setFrame(charFrame(ch));
+          line[col].setVisible(true);
+        } else {
+          line[col].setVisible(false);
+        }
+      }
+    });
   }
 }
