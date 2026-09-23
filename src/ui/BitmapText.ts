@@ -5,7 +5,7 @@ const CHAR_W = 8
 const CHAR_H = 8
 const CANVAS_W = 320
 
-function charFrame(ch: string): number {
+export function charFrame(ch: string): number {
     return ch.charCodeAt(0)
 }
 

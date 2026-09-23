@@ -38,6 +38,7 @@ client-angular/
     services/map.ts      — MapService, plus MapCategory/MapData TS mirrors of the C# types
     utils/api-base-url.ts — apiBaseUrl(), shared between App's health check and MapService
     game-canvas/          — hosts the Phaser instance (Phase 0 scaffolding)
+    game/                 — WorldScene, shell-layout.ts (constants), bitmap-text.ts
 ```
 
 ### Phase 0 — Scaffolding ✅ complete
@@ -83,6 +84,20 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   single request per uncached map, zero requests on a cache hit, one request even
   when two calls for the same map fire back-to-back without awaiting the first.
 
+### Phase 2 — Shell rendering parity ✅ complete
+
+- **`game/shell-layout.ts`** — layout constants (tile/char sizes, border,
+  panel/log positions, EGA colours, charset sentinels), extracted from the
+  old inline `WorldScene.ts`.
+- **`game/bitmap-text.ts`** — `writeText`/`charFrame`, taking a `Phaser.Scene`
+  parameter instead of being a private scene method.
+- **`game/world-scene.ts`** — `WorldScene` class hosting the ported
+  `drawBorder`, `drawMoonPhase`, `drawWindDirection`, `drawPartyPanel`, and
+  `drawLogPanel`, plus the public `addLogMessage`/`refreshLog` log-scroll
+  logic. `addLogMessage` is the hook Phase 3 step 20 will feed from the
+  server's `Log` list.
+- Shell parity confirmed via direct visual comparison against the old build.
+
 ### Environment / tooling notes specific to the new stack
 
 - **Angular 22 introduced a genuine `@Service()` decorator**, replacing
@@ -125,6 +140,21 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - **`db:push` must run on every fresh environment** because the SQLite `.db` file is
   gitignored. *(Carried over from the old stack; likely to resurface once the new
   stack adds its own persistence layer in Phase 3.)*
+- **`ng test` had never actually been run clean before Phase 2.** Mounting
+  `GameCanvas` in a spec boots a real `Phaser.Game`, and Phaser's texture-system
+  init runs a canvas-alpha check as a module-load side effect that jsdom can't
+  satisfy without the native `canvas` npm package. Fixed with a fully
+  hand-rolled `vi.mock('phaser', () => ({...}))` in each affected spec
+  (`game-canvas.spec.ts`, `app.spec.ts`) — partial mocking via `importOriginal()`
+  still loads and crashes on the real package. The mock needs both flat
+  top-level properties and a self-referencing `default` key (Vitest's runtime
+  interop expects `default`; Phaser's own `.d.ts` typing doesn't have one), a
+  real `class` for `Scene` (since `WorldScene extends Phaser.Scene` evaluates
+  it at class-definition time) and `Game` (arrow-function mock
+  implementations can't be used with `new`), and must avoid object spread
+  inside the factory itself (hoisting means esbuild's spread helper isn't
+  available there yet). `app.spec.ts` also needed `provideHttpClientTesting()`
+  since `App.ngOnInit()` awaits a real `MapService` call.
 
 ---
 

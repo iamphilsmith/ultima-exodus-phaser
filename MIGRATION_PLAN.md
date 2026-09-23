@@ -94,11 +94,15 @@ from it. Still nothing rendered.
 
 ---
 
-## Phase 2 — Shell rendering parity
+## Phase 2 — Shell rendering parity ✅ complete
 
 Goal: the permanent HUD chrome (border, panels, log) renders identically to
 the old build, entirely client-side — this is pure rendering, so it should
 port almost unchanged from the old `GameHUD`.
+
+> **Revised from the original plan.** Step 12 was built as five smaller
+> commits rather than one, at finer granularity than originally planned —
+> see `CONTEXT.md`'s "Phase 2" section for what each actually did.
 
 12. **Port `WorldScene`'s shell-rendering methods** — there's no separate
     `GameHUD` file; the border, hardcoded moon phase text, hardcoded wind
@@ -107,9 +111,17 @@ port almost unchanged from the old `GameHUD`.
     `drawPartyPanel`, `drawLogPanel`, plus the log-scrolling logic and the
     shared `writeText` charset helper). Copy these into the new
     Angular-hosted Phaser instance. No server calls involved.
+    - 12a. Serve the charset asset, add `WorldScene`, enable `pixelArt`.
+    - 12b. Extract `game/shell-layout.ts` (layout constants) and
+      `game/bitmap-text.ts` (`writeText`/`charFrame`).
+    - 12c. Port border, moon phase, wind direction.
+    - 12d. Port party panel.
+    - 12e. Port log panel and the public `addLogMessage` hook.
 13. **Confirm shell parity** — visual diff against the old build (panel
-    positions, border thickness, text placement). Fix-only commit if needed.
-
+    positions, border thickness, text placement). Done as a direct
+    side-by-side comparison against the old build rather than a scripted
+    screenshot diff — judged unnecessary rigor for a straight port of a
+    few small methods.
 ---
 
 ## Phase 3 — Overworld movement loop

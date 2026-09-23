@@ -4,8 +4,9 @@
 > for a rewrite from the old thick-client (Phaser + tRPC + SQLite) stack to
 > a thin-client / server-authoritative stack, undertaken primarily as a vehicle
 > to learn Angular and C#/.NET. **Phase 0 (scaffolding) and Phase 1 (static map
-> delivery — see "Map delivery" below) are complete** and match what's described
-> here; everything else on this page is still target design, not yet built.
+> delivery — see "Map delivery" below), and Phase 2 (shell rendering parity) are
+> complete** and match what's described here; everything else on this page is 
+> still target design, not yet built.
 > See `CONTEXT.md` for full current implementation state and `MIGRATION_PLAN.md`
 > for build sequencing. Sections below are updated as each part is actually built.
 
@@ -257,7 +258,7 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
 
 ---
 
-## Resolved during Phase 0 / Phase 1
+## Resolved during Phase 0 / Phase 1 / Phase 2
 
 - **C# solution/project layout**: `UltimaExodus.Engine` (domain logic, no
   dependencies on the other two), `UltimaExodus.Data` (data loading —
@@ -266,6 +267,12 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
 - **Angular ↔ Phaser mounting pattern**: resolved in Phase 0 — Phaser mounts
   inside an Angular component (`GameCanvas`) at the game's native 320×192
   internal resolution, 3x zoom.
+- **Shell rendering location**: layout constants live in
+  `client-angular/src/app/game/shell-layout.ts`, the `writeText`/`charFrame`
+  helper in `game/bitmap-text.ts`, and the ported `drawBorder`/`drawMoonPhase`/
+  `drawWindDirection`/`drawPartyPanel`/`drawLogPanel` methods on
+  `game/world-scene.ts`'s `WorldScene` class — same shape as the old
+  inline-on-`WorldScene.ts` layout, just split into smaller files.
 
 ## Open questions / not yet decided
 
