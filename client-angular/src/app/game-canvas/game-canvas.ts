@@ -1,4 +1,5 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { WorldScene } from '../game/world-scene';
 import Phaser from 'phaser';
 
 @Component({
@@ -20,11 +21,8 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
       zoom: 3,
       parent: this.gameContainer.nativeElement,
       backgroundColor: '#000000',
-      scene: {
-        create() {
-          // intentionally empty — Step 5 verifies mount/unmount only
-        }
-      }
+      pixelArt: true,
+      scene: [WorldScene]
     });
   }
 
