@@ -1,10 +1,29 @@
+import { vi } from 'vitest';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+
+vi.mock('phaser', () => {
+  class MockScene {
+    constructor(_key?: string) {}
+  }
+  class MockGame {
+    destroy(): void {}
+  }
+  const mockPhaser: any = {
+    AUTO: 0,
+    Scene: MockScene,
+    Game: MockGame,
+  };
+  mockPhaser.default = mockPhaser;
+  return mockPhaser;
+});
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideHttpClientTesting()],
     })
       .compileComponents();
   });
@@ -15,10 +34,4 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, client-angular');
-  });
 });

@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { EGA_CYAN } from './shell-layout';
+import { writeText } from './bitmap-text';
 
 export class WorldScene extends Phaser.Scene {
   constructor() {
@@ -15,11 +17,7 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     console.log('chars frameTotal:', this.textures.get('chars').frameTotal);
 
-    // TEMPORARY: proves charset loads and slices correctly. Remove in 12b.
-    this.add
-      .image(8, 8, 'chars', 'A'.charCodeAt(0))
-      .setOrigin(0, 0)
-      .setDisplaySize(8, 8)
-      .setTint(0x54fcfc);
+    // TEMPORARY: proves shell-layout + bitmap-text work together. Remove in 12c.
+    writeText(this, 'HELLO', 8, 8, EGA_CYAN);
   }
 }
