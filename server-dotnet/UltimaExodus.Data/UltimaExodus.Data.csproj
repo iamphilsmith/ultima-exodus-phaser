@@ -11,4 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UltimaExodus.Engine\UltimaExodus.Engine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+  </ItemGroup>
 </Project>

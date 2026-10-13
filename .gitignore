@@ -33,6 +33,8 @@ dist-ssr
 # SQLite
 *.db
 *.sqlite
+*.db-wal
+*.db-shm
 
 # Non public files
 *.con
