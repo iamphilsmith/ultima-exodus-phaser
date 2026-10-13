@@ -4,9 +4,10 @@
 > for a rewrite from the old thick-client (Phaser + tRPC + SQLite) stack to
 > a thin-client / server-authoritative stack, undertaken primarily as a vehicle
 > to learn Angular and C#/.NET. **Phase 0 (scaffolding) and Phase 1 (static map
-> delivery — see "Map delivery" below), and Phase 2 (shell rendering parity) are
-> complete** and match what's described here; everything else on this page is 
-> still target design, not yet built.
+> delivery — see "Map delivery" below), and Phase 2 (shell rendering parity) are complete** and match what's described
+> here. **Phase 3 is underway:** persistence and overworld movement rules exist
+> (see "Persistence" below); the move endpoint and snapshot are still target
+> design. Everything else on this page is not yet built.
 > See `CONTEXT.md` for full current implementation state and `MIGRATION_PLAN.md`
 > for build sequencing. Sections below are updated as each part is actually built.
 
@@ -166,6 +167,20 @@ it to the client inside the encounter snapshot.
 
 ---
 
+## Persistence
+
+**Status: implemented (Phase 3, step 14).** Mutable game state is stored with
+EF Core and SQLite, in `UltimaExodus.Data/Persistence/`. Map data stays
+file-backed and does not use the database.
+
+- `GameState` holds the party's saved position (`TileX`, `TileY`, `MapId`).
+  Single-player with no login means exactly one row, with a fixed `Id` of 1
+  (the key is never database-generated).
+- Migrations are applied at startup via `Database.Migrate()`. The `.db` file is
+  gitignored.
+
+---
+
 ## Conflict map selection
 
 Static lookup: **party surface type × opponent movement type**, with land-vs-land
@@ -254,11 +269,14 @@ public record GameStateSnapshot(
 ```
 
 Returned in full on every action — no diffing on either side. Not yet
-implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
+implemented — arrives in Phase 3 step 16. `Party` will be a hardcoded stub
+until Phase 5 supplies real party data, so the shape does not change later.
+`Effects` and `Entities` are empty until combat and dynamic entities exist.
+See `MIGRATION_PLAN.md`.
 
 ---
 
-## Resolved during Phase 0 / Phase 1 / Phase 2
+## Resolved during Phase 0 / Phase 1 / Phase 2 / Phase 3
 
 - **C# solution/project layout**: `UltimaExodus.Engine` (domain logic, no
   dependencies on the other two), `UltimaExodus.Data` (data loading —
@@ -273,6 +291,10 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
   `drawWindDirection`/`drawPartyPanel`/`drawLogPanel` methods on
   `game/world-scene.ts`'s `WorldScene` class — same shape as the old
   inline-on-`WorldScene.ts` layout, just split into smaller files.
+- **Movement rules location**: `OverworldMovement` in `UltimaExodus.Engine/Movement/`
+  is a pure function (map + position + compass `Direction` in, `MoveResult`
+  out) with no database, HTTP or logging. The endpoint orchestrates it. The
+  client maps keys to compass directions (Up → North).
 
 ## Open questions / not yet decided
 
@@ -283,3 +305,6 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
 - Deployment topology: whether Angular `dist/` will be served by the .NET app
   (same origin, eliminating CORS in production) — deferred but acknowledged
   as an important distinction to settle before cutover
+- Tile attribute delivery for fog of war: a separate endpoint (preferred, if tile
+  indices are shared across all tilesheets) vs. attaching attributes to each
+  map response. Tentative as step 19a in `MIGRATION_PLAN.md`.

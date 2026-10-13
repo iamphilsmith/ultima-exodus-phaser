@@ -24,13 +24,18 @@ A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeS
 
 ```
 server-dotnet/
+  .config/dotnet-tools.json  - pins the dotnet-ef tool
   UltimaExodus.Engine/   — domain logic, no dependencies on the other two projects
     Terrain/             — TileProperties, TileCatalogue
     Maps/                — MapCategory, MapData, MapEntity
+    Movement/            — Direction, MoveResult, OverworldMovement
+  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules
   UltimaExodus.Data/     — data loading; depends on Engine
     Maps/                — TiledMapJson, MapSourceLoader
     MapSources/           — Tiled JSON source files, copied here from assets/maps/
                             (copy-to-output configured in UltimaExodus.Data.csproj)
+    Persistence/         — GameState, UltimaExodusDbContext
+    Migrations/          — EF Core migrations (InitialGameState)
   UltimaExodus.Api/      — HTTP endpoints; depends on both Engine and Data
 
 client-angular/
@@ -98,6 +103,19 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   server's `Log` list.
 - Shell parity confirmed via direct visual comparison against the old build.
 
+### Phase 3 — Overworld movement loop 🚧 in progress
+
+- **Step 14 ✅** — `GameState` entity and `UltimaExodusDbContext`
+  (`UltimaExodus.Data/Persistence/`), EF Core + SQLite. One row, `Id` always 1
+  (`ValueGeneratedNever`). `InitialGameState` migration applied at startup via
+  `Database.Migrate()`, so a fresh environment needs no manual DB step.
+- **Step 15 ✅** — `OverworldMovement.TryMove` (`UltimaExodus.Engine/Movement/`):
+  wraps at the map edges (`((v % size) + size) % size`, since C#'s `%` can be
+  negative), blocks on `TileCatalogue.Solid`, returns `MoveResult(X, Y, Blocked)`.
+  `Tiles` is a flat row-major array (`index = y * Width + x`). Seven xUnit tests in
+  `UltimaExodus.Engine.Tests`.
+- **Next:** step 16, `POST api/overworld/move`.
+
 ### Environment / tooling notes specific to the new stack
 
 - **Angular 22 introduced a genuine `@Service()` decorator**, replacing
@@ -114,6 +132,13 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - `ng build` is a full AOT/minification pass and is meaningfully slower than
   `ng serve`'s dev builds — expected, not a regression. Use `ng serve` for iteration;
   reserve `ng build` for periodic checkpoints.
+- **`dotnet-ef` is a local tool** (manifest at `server-dotnet/.config/dotnet-tools.json`).
+  Run `dotnet tool restore` once per fresh environment (the devcontainer's
+  `postCreateCommand` does this). Create migrations from `server-dotnet/` with:
+  `dotnet ef migrations add <Name> --project UltimaExodus.Data --startup-project UltimaExodus.Api`
+- **The SQLite file is `UltimaExodus.Api/ultima-exodus.db`**, resolved against the
+  working directory, so run the API from inside `UltimaExodus.Api/`
+  (`cd server-dotnet/UltimaExodus.Api && dotnet run`).
 
 ### Gotchas hit during Phase 0 / Phase 1
 
@@ -137,9 +162,15 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   port-visibility issues. `apiBaseUrl()` (in `client-angular/src/app/utils/`) detects
   the Codespaces hostname and swaps port segments; used by both the health check and
   `MapService`.
-- **`db:push` must run on every fresh environment** because the SQLite `.db` file is
-  gitignored. *(Carried over from the old stack; likely to resurface once the new
-  stack adds its own persistence layer in Phase 3.)*
+- **`db:push` must run on every fresh environment** *(old stack only — the new
+  stack applies EF Core migrations automatically at startup)* because the SQLite
+  `.db` file is gitignored.
+- **EF Core puts SQLite in WAL mode**, which creates `-wal` and `-shm` companion files
+  next to the database while it's in use. `*.db-wal` and `*.db-shm` are in the root
+  `.gitignore` alongside `*.db`.
+- **`NU1903` build warning**: `Microsoft.OpenApi` 2.0.0 (transitive via
+  `Microsoft.AspNetCore.OpenApi`) has a known vulnerability advisory. Unaddressed
+  so far; a package bump is a separate task from the Phase 3 work.
 - **`ng test` had never actually been run clean before Phase 2.** Mounting
   `GameCanvas` in a spec boots a real `Phaser.Game`, and Phaser's texture-system
   init runs a canvas-alpha check as a module-load side effect that jsdom can't
@@ -676,7 +707,7 @@ npm run db:generate  # generate migration files
 ```
 
 See "New Stack Progress" above for the new stack's equivalent commands
-(`dotnet run --project UltimaExodus.Api`, `ng serve`).
+(`cd server-dotnet/UltimaExodus.Api && dotnet run`, `ng serve`).
 
 ---
 

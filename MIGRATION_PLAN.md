@@ -124,32 +124,55 @@ port almost unchanged from the old `GameHUD`.
     few small methods.
 ---
 
-## Phase 3 — Overworld movement loop
+## Phase 3 — Overworld movement loop 🚧 in progress
 
 Goal: the core gameplay loop — the biggest phase, since it's the first place
 client and server actually cooperate on live game state.
 
-14. **Add `GameState` persistence entity** — mirrors the old `game_state`
-    table (`tileX`, `tileY`, `mapId`). This is where a real database layer
-    (EF Core + SQLite, per the original Phase 1 plan) actually belongs.
-15. **Port movement + collision logic into `UltimaExodus.Engine`** — solid
-    tiles (water, mountains), overworld wrap-at-edges behaviour, ported from
-    the old `OverworldView` logic. Reuses `TileCatalogue` from Phase 1.
+> **Revised from the original plan.** Decisions made at the start of Phase 3:
+> - Step 16's snapshot includes a hardcoded stub `Party` (matching the Phase 2
+>   party panel), so the DTO shape stays stable until Phase 5 supplies real data.
+> - The server builds the log text (`North`, `North BLK`) — it owns the full log,
+>   so this moves out of the client rather than being ported as-is.
+> - Step 21 gains a read-only "current state" endpoint so the client has a
+>   position to render before the first keypress.
+> - A tentative step 19a (tile attributes endpoint) is added before fog of war.
+
+14. ✅ **Add `GameState` persistence entity** — `GameState` (`TileX`, `TileY`,
+    `MapId`) and `UltimaExodusDbContext` in `UltimaExodus.Data/Persistence/`,
+    EF Core + SQLite. Single row with a fixed `Id` of 1 (`ValueGeneratedNever`).
+    `InitialGameState` migration, applied at startup via `Database.Migrate()`,
+    so there is no manual DB step on a fresh environment. `dotnet-ef` is a local
+    tool (`dotnet tool restore`).
+15. ✅ **Port movement + collision logic into `UltimaExodus.Engine`** —
+    `OverworldMovement.TryMove(map, x, y, direction)` in `Engine/Movement/`,
+    returning a `MoveResult` (new position + `Blocked`). Wraps at the map edges
+    and blocks on solid tiles via `TileCatalogue`. Verified with a new xUnit
+    project, `UltimaExodus.Engine.Tests` (an addition to the original plan).
 16. **Add `POST api/overworld/move` endpoint** — takes a direction, returns
     a `GameStateSnapshot` (position, log, clock, empty entities list for
     now). Clock values are hardcoded to match the old static moon
-    phase/wind display — making them dynamic is out of scope until cutover.
+    phase/wind display — making them dynamic is out of scope until cutover. The snapshot's `Party` is a hardcoded stub until Phase 5. `Effects` and
+    `Entities` are empty lists. Log text is generated server-side.
 17. **Port `InputService` into Angular** — arrow keys/E/A/Escape → calls to
     the move endpoint, same key mapping as the old build.
 18. **Render viewport from move response** — 11×11 tile redraw around hero
     position, same "camera fixed, grid redraws" pattern as the old client.
+19. (part a)*(Tentative)* **Serve tile attributes to the client** — a separate endpoint
+    plus an Angular `TileCatalogueService`, loaded at app init, so the client
+    has `VisionBlocking` data for fog of war. Chosen over extending `MapData`
+    because the catalogue is expected to be shared across all maps. **Pending
+    confirmation** that tile indices mean the same thing across every tilesheet
+    (including conflict maps); if not, attach attributes to each map response
+    instead.
 19. **Port fog-of-war raycasting to the new client** — stays entirely
     client-side per `ARCHITECTURE.md`; ported algorithm, not rewritten.
 20. **Wire log panel to server-provided log** — display the `Log` list from
     the snapshot instead of a local buffer.
 21. **Persist and restore position** — confirm `move` persists to SQLite
     each call; add restore-on-load so a fresh session resumes at the last
-    saved tile.
+    saved tile. This includes a read-only `GET` endpoint returning the current snapshot
+    without moving, so the client can render before the first keypress.
 22. **Confirm overworld parity** — movement, wrapping, fog of war, and
     save/restore all match the old stack. Fix-only commit if needed.
 
