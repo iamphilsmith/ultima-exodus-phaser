@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using UltimaExodus.Api.Contracts;
+using UltimaExodus.Api.Services;
 using UltimaExodus.Data.Persistence;
 using UltimaExodus.Data.Maps;
 using UltimaExodus.Engine.Maps;
+using UltimaExodus.Engine.Movement;
+using UltimaExodus.Engine.State;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +16,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+
+builder.Services.AddSingleton<ActionLog>();
+builder.Services.AddScoped<OverworldService>();
 
 builder.Services.AddCors(options =>
 {
@@ -61,6 +68,17 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
     {
         return Results.NotFound($"Map not found: {mapId}");
     }
+});
+
+app.MapPost("api/overworld/move", async (MoveRequest request, OverworldService overworld) =>
+{
+    if (!Enum.IsDefined(request.Direction))
+    {
+        return Results.BadRequest($"Unknown direction: {request.Direction}");
+    }
+
+    var snapshot = await overworld.MoveAsync(request.Direction);
+    return Results.Ok(snapshot);
 });
 
 app.Run();
