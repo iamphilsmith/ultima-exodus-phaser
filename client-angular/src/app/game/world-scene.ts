@@ -1,3 +1,7 @@
+import { InputService } from './input-service'
+import { InputDirection } from './input-direction'
+import { CompassDirection, OverworldService } from '../services/overworld';
+
 import Phaser from 'phaser';
 import { 
   BORDER,
@@ -17,11 +21,21 @@ import {
   CHAR_ARROW_RIGHT } from './shell-layout';
 import { charFrame,writeText } from './bitmap-text';
 
+// Overworld interpretation of the keys. Moves into the overworld view in step 18
+const OVERWORLD_COMPASS: Record<InputDirection, CompassDirection> = {
+  [InputDirection.Up]: 'North',
+  [InputDirection.Right]: 'East',
+  [InputDirection.Down]: 'South',
+  [InputDirection.Left]: 'West'
+};
+
 export class WorldScene extends Phaser.Scene {
   private logLines: Phaser.GameObjects.Image[][] = [];
   private logMessages: string[] = ['', '', '', '', '', '', ''];
+  private inputService!: InputService;
+  private moveInFlight = false;
 
-  constructor() {
+  constructor(private readonly overworld: OverworldService) {
     super('world');
   }
 
@@ -48,6 +62,29 @@ export class WorldScene extends Phaser.Scene {
       counter += 1;
       this.addLogMessage(`Test message ${counter}`);
     });
+
+    this.inputService = new InputService(this);
+    this.inputService.onMove((direction) => void this.handleMove(direction));
+
+  }
+
+  override update(): void {
+    this.inputService.update();
+  }
+
+  private async handleMove(direction: InputDirection): Promise<void> {
+    // One request at a time: overlapping moves would race on the server.
+    if (this.moveInFlight) {
+      console.log('Move in flight, ignoring new move request.');
+      return;
+    }
+    this.moveInFlight = true;
+    try {
+      const snapshot = await this.overworld.move(OVERWORLD_COMPASS[direction]);
+      console.log('snapshot:', snapshot);
+    } finally {
+      this.moveInFlight = false;
+    }
   }
 
   private drawBorder(): void {
