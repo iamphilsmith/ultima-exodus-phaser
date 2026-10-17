@@ -6,6 +6,7 @@ using UltimaExodus.Data.Maps;
 using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
+using UltimaExodus.Engine.Terrain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,6 +70,8 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
         return Results.NotFound($"Map not found: {mapId}");
     }
 });
+
+app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
 
 app.MapPost("api/overworld/move", async (MoveRequest request, OverworldService overworld) =>
 {

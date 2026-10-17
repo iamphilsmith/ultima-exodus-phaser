@@ -16,4 +16,6 @@ public static class TileCatalogue
     
     public static TileProperties GetProperties(int tileIndex)
         => Overrides.GetValueOrDefault(tileIndex, Default);
+
+    public static TileCatalogueSnapshot GetSnapshot() => new (Default, Overrides);
 }
