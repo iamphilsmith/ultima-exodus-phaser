@@ -6,6 +6,7 @@ export const CHAR_H = 8;
 export const BORDER = 8;
 export const VIEW_TILES = 11;
 export const MAP_X = BORDER;
+export const MAP_Y = BORDER;
 export const MAP_PX = VIEW_TILES * TILE;         // 176
 export const PANEL_X = MAP_X + MAP_PX + BORDER;  // 192
 export const CANVAS_W = 320;

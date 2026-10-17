@@ -1,6 +1,7 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, inject } from '@angular/core';
 import { OverworldService } from '../services/overworld';
 import { WorldScene } from '../game/world-scene';
+import { MapService } from '../services/map';
 import Phaser from 'phaser';
 
 @Component({
@@ -14,6 +15,7 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
 
   private game?: Phaser.Game;
   private overworld = inject(OverworldService);
+  private mapService = inject(MapService);
 
   ngAfterViewInit(): void {
     this.game = new Phaser.Game({
@@ -24,7 +26,7 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
       parent: this.gameContainer.nativeElement,
       backgroundColor: '#000000',
       pixelArt: true,
-      scene: [new WorldScene(this.overworld)]
+      scene: [new WorldScene(this.overworld, this.mapService)]
     });
   }
 

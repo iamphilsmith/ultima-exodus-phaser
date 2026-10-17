@@ -1,6 +1,8 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
 import { CompassDirection, OverworldService } from '../services/overworld';
+import { MapCategory, MapService } from '../services/map';
+import { OverworldView } from './overworld-view';
 
 import Phaser from 'phaser';
 import { 
@@ -34,13 +36,23 @@ export class WorldScene extends Phaser.Scene {
   private logMessages: string[] = ['', '', '', '', '', '', ''];
   private inputService!: InputService;
   private moveInFlight = false;
+  private overworldView!: OverworldView;
 
-  constructor(private readonly overworld: OverworldService) {
+  constructor(
+    private readonly overworld: OverworldService,
+    private readonly mapService: MapService
+  ) { 
     super('world');
   }
 
+
+
   preload(): void {
     this.load.spritesheet('chars', 'assets/sprites/charset.png', {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
+    this.load.spritesheet('tiles', 'assets/sprites/shapes.png', {
       frameWidth: 16,
       frameHeight: 16,
     });
@@ -81,7 +93,11 @@ export class WorldScene extends Phaser.Scene {
     this.moveInFlight = true;
     try {
       const snapshot = await this.overworld.move(OVERWORLD_COMPASS[direction]);
-      console.log('snapshot:', snapshot);
+      console.log('snapshot:', snapshot); // remove eventually
+      // the move endpoint only serves the overworld for now; towns and castles arrive in phase 4
+      const map = await this.mapService.getMap(MapCategory.World, snapshot.position.mapId);
+      this.overworldView ??= new OverworldView(this, map);
+      this.overworldView.render(snapshot.position);
     } finally {
       this.moveInFlight = false;
     }
