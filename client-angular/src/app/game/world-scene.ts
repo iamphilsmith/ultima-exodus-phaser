@@ -3,6 +3,7 @@ import { InputDirection } from './input-direction'
 import { CompassDirection, OverworldService } from '../services/overworld';
 import { MapCategory, MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
+import { TileCatalogueService } from '../services/tile-catalogue';
 
 import Phaser from 'phaser';
 import { 
@@ -40,7 +41,9 @@ export class WorldScene extends Phaser.Scene {
 
   constructor(
     private readonly overworld: OverworldService,
-    private readonly mapService: MapService
+    private readonly mapService: MapService,
+    private readonly tileCatalogue: TileCatalogueService
+
   ) { 
     super('world');
   }
@@ -94,9 +97,13 @@ export class WorldScene extends Phaser.Scene {
     try {
       const snapshot = await this.overworld.move(OVERWORLD_COMPASS[direction]);
       console.log('snapshot:', snapshot); // remove eventually
-      // the move endpoint only serves the overworld for now; towns and castles arrive in phase 4
-      const map = await this.mapService.getMap(MapCategory.World, snapshot.position.mapId);
-      this.overworldView ??= new OverworldView(this, map);
+      // this move endpoint only serves the overworld for now; towns and castles arrive in phase 4
+      const [map] = await Promise.all([
+        this.mapService.getMap(MapCategory.World, snapshot.position.mapId),
+        this.tileCatalogue.load(),  // no-op after the first call
+      ]);
+
+      this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
       this.overworldView.render(snapshot.position);
     } finally {
       this.moveInFlight = false;

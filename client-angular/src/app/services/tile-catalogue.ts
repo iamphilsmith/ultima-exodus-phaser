@@ -22,7 +22,7 @@ export class TileCatalogueService {
     /** Fetch the catalogue once. Safe to call repeatedly: callers share one request. */
     load(): Promise<void> {
         this.loading ??= firstValueFrom(
-            this.http.get<TileCatalogueData>(`${apiBaseUrl}/api/tiles`)
+            this.http.get<TileCatalogueData>(`${apiBaseUrl()}/api/tiles`)
         )
         .then(data => {
             this.data = data;

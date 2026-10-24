@@ -20,6 +20,7 @@ export const LOG_ROWS = 7;
 export const EGA_CYAN = 0x54fcfc;
 export const EGA_WHITE = 0xfcfcfc;
 export const EGA_BLUE = 0x0000a8;
+export const EGA_BLACK = 0x000000;
 
 // Charset sentinels
 export const CHAR_ARROW_RIGHT = 16;
