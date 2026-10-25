@@ -1,11 +1,10 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
-import { CompassDirection, OverworldService } from '../services/overworld';
+import { CompassDirection, GameStateSnapshot, LogEntry, OverworldService } from '../services/overworld';
 import { MapCategory, MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
-import { LogEntry } from '../services/overworld';
 
 import Phaser from 'phaser';
 import { 
@@ -38,7 +37,7 @@ export class WorldScene extends Phaser.Scene {
   private logLines: Phaser.GameObjects.Image[][] = [];
   private logMessages: string[] = ['', '', '', '', '', '', ''];
   private inputService!: InputService;
-  private moveInFlight = false;
+  private requestInFlight = false;
   private overworldView!: OverworldView;
 
   constructor(
@@ -75,35 +74,49 @@ export class WorldScene extends Phaser.Scene {
 
     this.inputService = new InputService(this);
     this.inputService.onMove((direction) => void this.handleMove(direction));
-
+    void this.restoreState();
   }
 
   override update(): void {
     this.inputService.update();
   }
 
+  private async restoreState(): Promise<void> {
+    // Ignore keys until the saved state is on screen.
+    this.requestInFlight = true;
+    try {
+      await this.applySnapshot(await this.overworld.getState());
+    } catch (error) {
+      console.error('Could not restore savedstate:', error);
+    } finally {
+      this.requestInFlight = false;
+    }
+  }
+
   private async handleMove(direction: InputDirection): Promise<void> {
     // One request at a time: overlapping moves would race on the server.
-    if (this.moveInFlight) {
-      console.log('Move in flight, ignoring new move request.');
-      return;
-    }
-    this.moveInFlight = true;
+    if (this.requestInFlight) return;
+    this.requestInFlight = true;
     try {
-      const snapshot = await this.overworld.move(OVERWORLD_COMPASS[direction]);
-      console.log('snapshot:', snapshot); // remove eventually
-      // this move endpoint only serves the overworld for now; towns and castles arrive in phase 4
-      const [map] = await Promise.all([
-        this.mapService.getMap(MapCategory.World, snapshot.position.mapId),
-        this.tileCatalogue.load(),  // no-op after the first call
-      ]);
-
-      this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
-      this.overworldView.render(snapshot.position);
-      this.showLog(snapshot.log);
+      await this.applySnapshot(await this.overworld.move(OVERWORLD_COMPASS[direction]));
+    } catch (error) {
+      console.error('Move failed:', error);
     } finally {
-      this.moveInFlight = false;
+      this.requestInFlight = false;
     }
+  }
+
+  /** Put a snapshot on screen: the viewport with fog, and the log panel. */
+  private async applySnapshot(snapshot: GameStateSnapshot): Promise<void> {
+    // The overworld endpoints only serv world maps for now; towns and castles will be handled later.
+    const [map] = await Promise.all([
+      this.mapService.getMap(MapCategory.World, snapshot.position.mapId),
+      this.tileCatalogue.load(), // no-op after the first call
+    ]);
+
+    this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
+    this.overworldView.render(snapshot.position);
+    this.showLog(snapshot.log);
   }
 
   private drawBorder(): void {

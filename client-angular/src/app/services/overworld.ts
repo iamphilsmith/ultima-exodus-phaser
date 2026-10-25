@@ -68,4 +68,10 @@ export class OverworldService {
             this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/move`, { direction })
         );
     }
+
+    getState(): Promise<GameStateSnapshot> {
+        return firstValueFrom(
+            this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/state`)
+        );
+    }
 }

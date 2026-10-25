@@ -31,6 +31,12 @@ public class OverworldService(UltimaExodusDbContext db, ActionLog log)
         return BuildSnapshot(state);
     }
 
+    public async Task<GameStateSnapshot> GetStateAsync()
+    {
+        var state = await GetOrCreateStateAsync();
+        return BuildSnapshot(state);
+    }
+
     private async Task<GameState> GetOrCreateStateAsync()
     {
         var state = await db.GameStates.FindAsync(SaveSlotId);

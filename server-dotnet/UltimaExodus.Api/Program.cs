@@ -84,6 +84,9 @@ app.MapPost("api/overworld/move", async (MoveRequest request, OverworldService o
     return Results.Ok(snapshot);
 });
 
+app.MapGet("api/overworld/state", async (OverworldService overworld) =>
+    Results.Ok(await overworld.GetStateAsync()));
+
 app.Run();
 
 
