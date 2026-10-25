@@ -4,6 +4,8 @@ import { CompassDirection, OverworldService } from '../services/overworld';
 import { MapCategory, MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
+import { logRows } from './log-rows';
+import { LogEntry } from '../services/overworld';
 
 import Phaser from 'phaser';
 import { 
@@ -71,13 +73,6 @@ export class WorldScene extends Phaser.Scene {
     this.drawLogPanel();
     this.refreshLog();
 
-    // TEMPORARY: proves log scrolling. Remove once real logs land in Phase 3 step 20.
-    let counter = 0;
-    this.input.keyboard?.on('keydown-SPACE', () => {
-      counter += 1;
-      this.addLogMessage(`Test message ${counter}`);
-    });
-
     this.inputService = new InputService(this);
     this.inputService.onMove((direction) => void this.handleMove(direction));
 
@@ -105,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
 
       this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
       this.overworldView.render(snapshot.position);
+      this.showLog(snapshot.log);
     } finally {
       this.moveInFlight = false;
     }
@@ -186,11 +182,9 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  public addLogMessage(msg: string): void {
-    this.logMessages.push(msg);
-    if (this.logMessages.length > LOG_ROWS) {
-      this.logMessages = this.logMessages.slice(-LOG_ROWS);
-    }
+  /** Show the server's log: the newest LOG_ROWS entries, newest on the bottom row. */
+  private showLog(entries: LogEntry[]): void {
+    this.logMessages = logRows(entries, LOG_ROWS);
     this.refreshLog();
   }
 
