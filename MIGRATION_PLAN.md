@@ -9,6 +9,7 @@
 > This shifted every step number from Phase 2 onward by +3 relative to the
 > original plan — if an older note or commit message references a step
 > number from Phase 2 onward, it may be off by 3 versus the numbering here.
+> Phase 3 adds a sub-step, 19a, rather than renumbering.
 
 ---
 
@@ -124,34 +125,84 @@ port almost unchanged from the old `GameHUD`.
     few small methods.
 ---
 
-## Phase 3 — Overworld movement loop
+## Phase 3 — Overworld movement loop ✅ complete
 
 Goal: the core gameplay loop — the biggest phase, since it's the first place
 client and server actually cooperate on live game state.
 
-14. **Add `GameState` persistence entity** — mirrors the old `game_state`
-    table (`tileX`, `tileY`, `mapId`). This is where a real database layer
-    (EF Core + SQLite, per the original Phase 1 plan) actually belongs.
-15. **Port movement + collision logic into `UltimaExodus.Engine`** — solid
-    tiles (water, mountains), overworld wrap-at-edges behaviour, ported from
-    the old `OverworldView` logic. Reuses `TileCatalogue` from Phase 1.
-16. **Add `POST api/overworld/move` endpoint** — takes a direction, returns
-    a `GameStateSnapshot` (position, log, clock, empty entities list for
-    now). Clock values are hardcoded to match the old static moon
-    phase/wind display — making them dynamic is out of scope until cutover.
-17. **Port `InputService` into Angular** — arrow keys/E/A/Escape → calls to
-    the move endpoint, same key mapping as the old build.
-18. **Render viewport from move response** — 11×11 tile redraw around hero
-    position, same "camera fixed, grid redraws" pattern as the old client.
-19. **Port fog-of-war raycasting to the new client** — stays entirely
-    client-side per `ARCHITECTURE.md`; ported algorithm, not rewritten.
-20. **Wire log panel to server-provided log** — display the `Log` list from
-    the snapshot instead of a local buffer.
-21. **Persist and restore position** — confirm `move` persists to SQLite
-    each call; add restore-on-load so a fresh session resumes at the last
-    saved tile.
-22. **Confirm overworld parity** — movement, wrapping, fog of war, and
-    save/restore all match the old stack. Fix-only commit if needed.
+> **Revised from the original plan.** Decisions made during Phase 3:
+> - Step 16's snapshot includes a hardcoded stub `Party` (matching the Phase 2
+>   party panel), so the DTO shape stays stable until Phase 5 supplies real data.
+> - The server builds the log text (`North`, `North BLK`) and holds the log in
+>   memory (`ActionLog`, capped at 50 entries) — it owns the full log, so this
+>   moves out of the client rather than being ported as-is. It is not persisted:
+>   it survives a page refresh but not an API restart.
+> - Step 19a was added before fog of war: tile attributes are served from a
+>   separate endpoint, because every tile-based map shares one tile sheet.
+>   It is a sub-step, so later numbering is unchanged.
+> - Step 21 gained a read-only "current state" endpoint so the client has a
+>   position to render before the first keypress.
+> - Tests were added beyond the original plan: an xUnit project for Engine
+>   rules, and Vitest specs for the pure client logic (`canSee`, `logRows`,
+>   `TileCatalogueService`).
+
+14. ✅ **Add `GameState` persistence entity** — `GameState` (`TileX`, `TileY`,
+    `MapId`) and `UltimaExodusDbContext` in `UltimaExodus.Data/Persistence/`,
+    EF Core + SQLite. Single row with a fixed `Id` of 1 (`ValueGeneratedNever`).
+    `InitialGameState` migration, applied at startup via `Database.Migrate()`,
+    so there is no manual DB step on a fresh environment. `dotnet-ef` is a local
+    tool (`dotnet tool restore`).
+15. ✅ **Port movement + collision logic into `UltimaExodus.Engine`** —
+    `OverworldMovement.TryMove(map, x, y, direction)` in `Engine/Movement/`,
+    returning a `MoveResult` (new position + `Blocked`). Wraps at the map edges
+    and blocks on solid tiles via `TileCatalogue`. Verified with a new xUnit
+    project, `UltimaExodus.Engine.Tests`.
+16. ✅ **Add `POST api/overworld/move` endpoint** — takes
+    `{ "direction": "North" | "South" | "East" | "West" }` and returns a
+    `GameStateSnapshot`. `OverworldService` (`UltimaExodus.Api/Services/`) loads
+    or creates the single `GameState` row (default tile (5,5) on
+    `world-sosaria`), calls `OverworldMovement`, saves, appends `North` /
+    `North BLK` to the in-memory `ActionLog`, and returns the snapshot. Clock
+    values are hardcoded to match the old static moon phase/wind display —
+    making them dynamic is out of scope until cutover. `Party` is a hardcoded
+    stub until Phase 5; `Entities` and `Effects` are empty lists. An undefined
+    direction returns 400.
+17. ✅ **Port `InputService` into Angular** — `game/input-service.ts` (same shape
+    as the old class, polled from `WorldScene.update()`), `game/input-direction.ts`,
+    and an Angular `OverworldService` (`services/overworld.ts`) that calls the
+    move endpoint. Arrow keys are wired; the E/A/Esc callbacks exist but nothing
+    registers on them until later phases. The scene allows one request in flight
+    at a time.
+18. ✅ **Render viewport from move response** — `game/overworld-view.ts`: 121 tile
+    images whose frames change on each snapshot, same "camera fixed, grid
+    redraws" pattern as the old client. Map geometry comes from the cached
+    `MapService`; tile numbers are already 0-based, so they are the sheet frame
+    numbers.
+19a. ✅ **Serve tile attributes to the client** — `GET api/tiles` returns
+    `{ default, overrides }` from `TileCatalogue`; the client's
+    `TileCatalogueService` fetches it once (concurrent callers share one
+    request) on the first snapshot. A separate endpoint was chosen over
+    extending `MapData` because every tile-based map uses the same 80-tile
+    sheet and no tile has conflicting attributes between maps; dungeons are not
+    tile-based and don't use the catalogue.
+19. ✅ **Port fog-of-war raycasting to the new client** — `game/line-of-sight.ts`
+    (`canSee`, a pure function with unit tests) plus fog drawing in
+    `OverworldView`. Stays entirely client-side per `ARCHITECTURE.md`; ported
+    algorithm, not rewritten.
+20. ✅ **Wire log panel to server-provided log** — the panel shows the newest
+    seven entries from the snapshot's `Log` (`game/log-rows.ts` pads short
+    logs with blank rows at the top). The temporary SPACE test hook and
+    `addLogMessage` were removed.
+21. ✅ **Persist and restore position** — each move is saved to SQLite;
+    `GET api/overworld/state` returns the current snapshot without moving, and
+    `WorldScene` calls it on start so a fresh session resumes at the last saved
+    tile, with fog and log, before any keypress.
+22. ✅ **Confirm overworld parity** — movement, wrapping, blocked moves (`BLK`
+    appended, position unchanged), fog of war and save/restore were compared
+    side by side with the old stack and match. No fix commit was needed.
+    Differences, all intended or cosmetic: the log is held by the server, so it
+    survives a page refresh; the old 60 ms walking "bump" of the avatar is not
+    ported; E/A/Esc are not wired.
 
 ---
 
@@ -237,3 +288,4 @@ committed and confirmed:
   `DungeonView`, per `dungeon-view.md`
 - NPC dialogue and real shop transactions (beyond whatever stub exists today)
 - Ambrosia shrine coordinates
+- The avatar's 60 ms walking "bump" tween from the old `OverworldView` (cosmetic)

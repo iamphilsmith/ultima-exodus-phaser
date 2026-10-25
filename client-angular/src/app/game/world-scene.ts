@@ -1,3 +1,11 @@
+import { InputService } from './input-service'
+import { InputDirection } from './input-direction'
+import { CompassDirection, GameStateSnapshot, LogEntry, OverworldService } from '../services/overworld';
+import { MapCategory, MapService } from '../services/map';
+import { OverworldView } from './overworld-view';
+import { TileCatalogueService } from '../services/tile-catalogue';
+import { logRows } from './log-rows';
+
 import Phaser from 'phaser';
 import { 
   BORDER,
@@ -17,16 +25,38 @@ import {
   CHAR_ARROW_RIGHT } from './shell-layout';
 import { charFrame,writeText } from './bitmap-text';
 
+// Overworld interpretation of the keys. Moves into the overworld view in step 18
+const OVERWORLD_COMPASS: Record<InputDirection, CompassDirection> = {
+  [InputDirection.Up]: 'North',
+  [InputDirection.Right]: 'East',
+  [InputDirection.Down]: 'South',
+  [InputDirection.Left]: 'West'
+};
+
 export class WorldScene extends Phaser.Scene {
   private logLines: Phaser.GameObjects.Image[][] = [];
   private logMessages: string[] = ['', '', '', '', '', '', ''];
+  private inputService!: InputService;
+  private requestInFlight = false;
+  private overworldView!: OverworldView;
 
-  constructor() {
+  constructor(
+    private readonly overworld: OverworldService,
+    private readonly mapService: MapService,
+    private readonly tileCatalogue: TileCatalogueService
+
+  ) { 
     super('world');
   }
 
+
+
   preload(): void {
     this.load.spritesheet('chars', 'assets/sprites/charset.png', {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
+    this.load.spritesheet('tiles', 'assets/sprites/shapes.png', {
       frameWidth: 16,
       frameHeight: 16,
     });
@@ -42,12 +72,51 @@ export class WorldScene extends Phaser.Scene {
     this.drawLogPanel();
     this.refreshLog();
 
-    // TEMPORARY: proves log scrolling. Remove once real logs land in Phase 3 step 20.
-    let counter = 0;
-    this.input.keyboard?.on('keydown-SPACE', () => {
-      counter += 1;
-      this.addLogMessage(`Test message ${counter}`);
-    });
+    this.inputService = new InputService(this);
+    this.inputService.onMove((direction) => void this.handleMove(direction));
+    void this.restoreState();
+  }
+
+  override update(): void {
+    this.inputService.update();
+  }
+
+  private async restoreState(): Promise<void> {
+    // Ignore keys until the saved state is on screen.
+    this.requestInFlight = true;
+    try {
+      await this.applySnapshot(await this.overworld.getState());
+    } catch (error) {
+      console.error('Could not restore savedstate:', error);
+    } finally {
+      this.requestInFlight = false;
+    }
+  }
+
+  private async handleMove(direction: InputDirection): Promise<void> {
+    // One request at a time: overlapping moves would race on the server.
+    if (this.requestInFlight) return;
+    this.requestInFlight = true;
+    try {
+      await this.applySnapshot(await this.overworld.move(OVERWORLD_COMPASS[direction]));
+    } catch (error) {
+      console.error('Move failed:', error);
+    } finally {
+      this.requestInFlight = false;
+    }
+  }
+
+  /** Put a snapshot on screen: the viewport with fog, and the log panel. */
+  private async applySnapshot(snapshot: GameStateSnapshot): Promise<void> {
+    // The overworld endpoints only serv world maps for now; towns and castles will be handled later.
+    const [map] = await Promise.all([
+      this.mapService.getMap(MapCategory.World, snapshot.position.mapId),
+      this.tileCatalogue.load(), // no-op after the first call
+    ]);
+
+    this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
+    this.overworldView.render(snapshot.position);
+    this.showLog(snapshot.log);
   }
 
   private drawBorder(): void {
@@ -126,11 +195,9 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  public addLogMessage(msg: string): void {
-    this.logMessages.push(msg);
-    if (this.logMessages.length > LOG_ROWS) {
-      this.logMessages = this.logMessages.slice(-LOG_ROWS);
-    }
+  /** Show the server's log: the newest LOG_ROWS entries, newest on the bottom row. */
+  private showLog(entries: LogEntry[]): void {
+    this.logMessages = logRows(entries, LOG_ROWS);
     this.refreshLog();
   }
 

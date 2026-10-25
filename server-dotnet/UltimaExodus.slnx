@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="UltimaExodus.Api/UltimaExodus.Api.csproj" />
   <Project Path="UltimaExodus.Data/UltimaExodus.Data.csproj" />
+  <Project Path="UltimaExodus.Engine.Tests/UltimaExodus.Engine.Tests.csproj" />
   <Project Path="UltimaExodus.Engine/UltimaExodus.Engine.csproj" />
 </Solution>

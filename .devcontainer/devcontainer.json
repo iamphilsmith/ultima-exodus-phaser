@@ -13,5 +13,5 @@
     "5223": { "visibility": "public" },
     "7107": { "visibility": "public" }
   },
-  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli && (cd client-angular && npm install)"
+  "postCreateCommand": "npm install && npm run db:push && pip install -r requirements.txt && npm install -g @angular/cli && (cd client-angular && npm install) && (cd server-dotnet && dotnet tool restore)"
 }

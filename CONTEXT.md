@@ -24,21 +24,40 @@ A single-player RPG tribute to Ultima III: Exodus, built with Phaser 4 and TypeS
 
 ```
 server-dotnet/
+  .config/dotnet-tools.json  - pins the dotnet-ef tool
   UltimaExodus.Engine/   — domain logic, no dependencies on the other two projects
-    Terrain/             — TileProperties, TileCatalogue
+    Terrain/             — TileProperties, TileCatalogue, TileCatalogueSnapshot
     Maps/                — MapCategory, MapData, MapEntity
+    Movement/            — Direction, MoveResult, OverworldMovement
+    State/               — GameStateSnapshot (+ PartyPosition, LogEntry, WorldClock,
+                           EffectSequence), PartyStatus, StubState, ActionLog
+  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules (movement, catalogue)
   UltimaExodus.Data/     — data loading; depends on Engine
     Maps/                — TiledMapJson, MapSourceLoader
     MapSources/           — Tiled JSON source files, copied here from assets/maps/
                             (copy-to-output configured in UltimaExodus.Data.csproj)
+    Persistence/         — GameState, UltimaExodusDbContext
+    Migrations/          — EF Core migrations (InitialGameState)
   UltimaExodus.Api/      — HTTP endpoints; depends on both Engine and Data
+    Contracts/           — MoveRequest
+    Services/            — OverworldService (move/state orchestration)
 
 client-angular/
   src/app/
-    services/map.ts      — MapService, plus MapCategory/MapData TS mirrors of the C# types
-    utils/api-base-url.ts — apiBaseUrl(), shared between App's health check and MapService
-    game-canvas/          — hosts the Phaser instance (Phase 0 scaffolding)
-    game/                 — WorldScene, shell-layout.ts (constants), bitmap-text.ts
+    services/
+      map.ts             — MapService, plus MapCategory/MapData TS mirrors of the C# types
+      overworld.ts       — OverworldService (move/state calls) and the snapshot interfaces
+      tile-catalogue.ts  — TileCatalogueService (fetches api/tiles once)
+    utils/api-base-url.ts — apiBaseUrl(), shared by every service that calls the API
+    game-canvas/          — hosts the Phaser instance; injects services and hands them
+                            to WorldScene
+    game/
+      world-scene.ts      — WorldScene: HUD chrome, input handling, applies snapshots
+      overworld-view.ts   — 11x11 viewport, avatar and fog
+      line-of-sight.ts    — canSee(): pure line-of-sight function for fog of war
+      input-service.ts, input-direction.ts — keyboard input
+      log-rows.ts         — pads the server log into log-panel rows
+      shell-layout.ts (constants), bitmap-text.ts
 ```
 
 ### Phase 0 — Scaffolding ✅ complete
@@ -94,9 +113,49 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - **`game/world-scene.ts`** — `WorldScene` class hosting the ported
   `drawBorder`, `drawMoonPhase`, `drawWindDirection`, `drawPartyPanel`, and
   `drawLogPanel`, plus the public `addLogMessage`/`refreshLog` log-scroll
-  logic. `addLogMessage` is the hook Phase 3 step 20 will feed from the
-  server's `Log` list.
+  logic. Superseded in Phase 3 step 20: `addLogMessage` was replaced by a private
+  `showLog`, fed from the server's `Log` list.
 - Shell parity confirmed via direct visual comparison against the old build.
+
+### Phase 3 — Overworld movement loop ✅ complete
+
+- **Step 14** — `GameState` entity and `UltimaExodusDbContext`
+  (`UltimaExodus.Data/Persistence/`), EF Core + SQLite. One row, `Id` always 1
+  (`ValueGeneratedNever`). `InitialGameState` migration applied at startup via
+  `Database.Migrate()`, so a fresh environment needs no manual DB step.
+- **Step 15** — `OverworldMovement.TryMove` (`UltimaExodus.Engine/Movement/`):
+  wraps at the map edges (`((v % size) + size) % size`, since C#'s `%` can be
+  negative), blocks on `TileCatalogue.Solid`, returns `MoveResult(X, Y, Blocked)`.
+  `Tiles` is a flat row-major array (`index = y * Width + x`). Covered by xUnit
+  tests in `UltimaExodus.Engine.Tests`.
+- **Step 16** — `POST api/overworld/move` (`{ "direction": "North" }`). The endpoint
+  delegates to `OverworldService`, which loads or creates the save row, moves,
+  saves, logs and returns a `GameStateSnapshot`. The log is an in-memory
+  singleton (`ActionLog`, capped at 50); clock and party are hardcoded stubs
+  (`StubState`); `Entities`/`Effects` are empty. `Direction` serialises as a
+  string via a `[JsonConverter]` on the enum only.
+- **Step 17** — `InputService` ported to `game/input-service.ts`; `WorldScene`
+  receives its services through its constructor from `GameCanvas`, maps
+  Up/Down/Left/Right to compass directions, and calls `OverworldService.move`.
+  One request in flight at a time.
+- **Step 18** — `OverworldView` draws the 11×11 viewport from the snapshot
+  position plus the cached map, wrapping at the edges. Tile numbers are already
+  0-based, so they are used directly as sheet frames (the old client needed
+  `tile.index - 1`).
+- **Step 19a** — `GET api/tiles` returns `{ default, overrides }`;
+  `TileCatalogueService` fetches it once. A separate endpoint because every
+  tile-based map uses the same 80-tile sheet with no conflicting attributes.
+- **Step 19** — fog of war: `canSee` (`game/line-of-sight.ts`, unit-tested) and
+  a fog layer in `OverworldView`, ported with the old `Math.floor` behaviour kept.
+- **Step 20** — the log panel shows the newest seven entries of the server log
+  (`logRows` pads short logs at the top); SPACE test hook removed.
+- **Step 21** — `GET api/overworld/state` returns the current snapshot without
+  moving (creating the default save on first call); `WorldScene` calls it on
+  start, so the viewport, fog and log appear before any keypress.
+- **Step 22** — parity confirmed side by side with the old stack (movement,
+  wrapping, blocked moves, fog, save/restore). No fix commit needed. Known
+  differences: the server-held log survives a refresh; the avatar's walking
+  bump is not ported; E/A/Esc are not wired yet.
 
 ### Environment / tooling notes specific to the new stack
 
@@ -114,8 +173,15 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - `ng build` is a full AOT/minification pass and is meaningfully slower than
   `ng serve`'s dev builds — expected, not a regression. Use `ng serve` for iteration;
   reserve `ng build` for periodic checkpoints.
+- **`dotnet-ef` is a local tool** (manifest at `server-dotnet/.config/dotnet-tools.json`).
+  Run `dotnet tool restore` once per fresh environment (the devcontainer's
+  `postCreateCommand` does this). Create migrations from `server-dotnet/` with:
+  `dotnet ef migrations add <Name> --project UltimaExodus.Data --startup-project UltimaExodus.Api`
+- **The SQLite file is `UltimaExodus.Api/ultima-exodus.db`**, resolved against the
+  working directory, so run the API from inside `UltimaExodus.Api/`
+  (`cd server-dotnet/UltimaExodus.Api && dotnet run`).
 
-### Gotchas hit during Phase 0 / Phase 1
+### Gotchas hit during Phase 0-3
 
 - **Newly created files may not be visible to the compiler until staged in git** —
   likely an editor-flush timing issue, not a real dotnet/git interaction. Running
@@ -137,9 +203,15 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   port-visibility issues. `apiBaseUrl()` (in `client-angular/src/app/utils/`) detects
   the Codespaces hostname and swaps port segments; used by both the health check and
   `MapService`.
-- **`db:push` must run on every fresh environment** because the SQLite `.db` file is
-  gitignored. *(Carried over from the old stack; likely to resurface once the new
-  stack adds its own persistence layer in Phase 3.)*
+- **`db:push` must run on every fresh environment** *(old stack only — the new
+  stack applies EF Core migrations automatically at startup)* because the SQLite
+  `.db` file is gitignored.
+- **EF Core puts SQLite in WAL mode**, which creates `-wal` and `-shm` companion files
+  next to the database while it's in use. `*.db-wal` and `*.db-shm` are in the root
+  `.gitignore` alongside `*.db`.
+- **`NU1903` build warning**: `Microsoft.OpenApi` 2.0.0 (transitive via
+  `Microsoft.AspNetCore.OpenApi`) has a known vulnerability advisory. Unaddressed
+  so far; a package bump is a separate task from the Phase 3 work.
 - **`ng test` had never actually been run clean before Phase 2.** Mounting
   `GameCanvas` in a spec boots a real `Phaser.Game`, and Phaser's texture-system
   init runs a canvas-alpha check as a module-load side effect that jsdom can't
@@ -153,8 +225,30 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   it at class-definition time) and `Game` (arrow-function mock
   implementations can't be used with `new`), and must avoid object spread
   inside the factory itself (hoisting means esbuild's spread helper isn't
-  available there yet). `app.spec.ts` also needed `provideHttpClientTesting()`
-  since `App.ngOnInit()` awaits a real `MapService` call.
+  available there yet). `app.spec.ts` needs `provideHttpClientTesting()` because 
+  `App` makes a real `HttpClient` health-check call, and `game-canvas.spec.ts`
+  needs the same since `GameCanvas` now injects services that use `HttpClient`.
+- **`${apiBaseUrl}` without `()` builds a URL from the function's source text.**
+  Hit twice (the move and tiles services). The symptom is either a 404 or a 200
+  with an HTML body and an `Unexpected token '<'` JSON parse error, because the
+  request goes to the Angular dev server rather than the API. A test that only
+  checks `url.endsWith('/api/...')` won't catch it; `tile-catalogue.spec.ts`
+  matches a full `http(s)://host/api/tiles` URL.
+- **Phaser creates scenes, not Angular, so a scene can't `inject()` services.**
+  `GameCanvas` injects them and passes them to `new WorldScene(...)`.
+- **Don't name a scene field `input`** — `Phaser.Scene` already has `this.input`.
+  `InputService` is held as `inputService`.
+- **Strict TypeScript settings bite on Phaser types**: `scene.input.keyboard` is
+  nullable (check it explicitly), and `noImplicitOverride` requires `override` on
+  `update()` since the base class declares it.
+- **A global `JsonStringEnumConverter` would change `MapData.category` from a
+  number to a string**, silently breaking the client's numeric `MapCategory`
+  enum. The converter is applied to the `Direction` enum only.
+- **Overlapping move requests race on the server** (both read the same saved
+  row). The scene allows one request in flight (`requestInFlight`), also used
+  while restoring state on load.
+- **`GET api/overworld/state` has one side effect**: on a fresh database it
+  creates the default save row. It is idempotent.
 
 ---
 
@@ -175,8 +269,8 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 
 *(Old implementation. The thick-client/dumb-server split below is being replaced
 by a server-authoritative model — see [`ARCHITECTURE.md`](./ARCHITECTURE.md);
-Phase 0 and Phase 1 of that migration are already complete, see "New Stack Progress"
-above. The rendering-only decisions here, e.g. camera and Phaser-canvas UI, are
+Phase 0 and Phase 1 of that migration are already complete to Phases 0–3 of that migration are already complete.
+The rendering-only decisions here, e.g. camera and Phaser-canvas UI, are
 expected to hold regardless of backend, since they concern the client's display
 layer only.)*
 
@@ -367,7 +461,7 @@ inline map-property reads.
   this note for Phase 2/7 scoping.
 
 ### Still To Do 📋
-- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phase 0 and Phase 1 complete — see "New Stack Progress" above)
+- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phases 0-3 complete — see "New Stack Progress" above)
 - Wire real moon phase data to `drawMoonPhase()`
 - Wire real wind direction data to `drawWindDirection()`
 - Populate party panel from real character data (BCD-encoded, from ROSTER.ULT / PARTY.ULT)
@@ -676,7 +770,7 @@ npm run db:generate  # generate migration files
 ```
 
 See "New Stack Progress" above for the new stack's equivalent commands
-(`dotnet run --project UltimaExodus.Api`, `ng serve`).
+(`cd server-dotnet/UltimaExodus.Api && dotnet run`, `ng serve`).
 
 ---
 

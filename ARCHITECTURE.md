@@ -3,10 +3,12 @@
 > **Status: migration underway.** This document describes the target architecture
 > for a rewrite from the old thick-client (Phaser + tRPC + SQLite) stack to
 > a thin-client / server-authoritative stack, undertaken primarily as a vehicle
-> to learn Angular and C#/.NET. **Phase 0 (scaffolding) and Phase 1 (static map
-> delivery — see "Map delivery" below), and Phase 2 (shell rendering parity) are
-> complete** and match what's described here; everything else on this page is 
-> still target design, not yet built.
+> to learn Angular and C#/.NET. 
+> **Phases 0–3 (scaffolding, static map delivery — see "Map delivery" below —
+> shell rendering, and the overworld movement loop) are complete** and match
+> what's described here; see "Persistence", "Overworld endpoints" and
+> "Example: full snapshot shape" below. Everything else on this page is not yet
+> built.
 > See `CONTEXT.md` for full current implementation state and `MIGRATION_PLAN.md`
 > for build sequencing. Sections below are updated as each part is actually built.
 
@@ -155,6 +157,15 @@ town/castle/dungeon, conflict maps must be included in the same catalogue
 expansion pass** — not treated as a later addition — since conflict encounters
 will need the same walkability/vision data once combat is implemented.
 
+**Delivery — implemented (Phase 3, step 19a).** `GET api/tiles` returns
+`{ default, overrides }`: the few tiles with special rules, keyed by tile
+index, plus the default for every other tile. The client's
+`TileCatalogueService` fetches it once and then looks tiles up synchronously
+for fog of war. It is a separate endpoint rather than part of `MapData`
+because every tile-based map shares the same 80-tile sheet, and no tile has
+conflicting attributes across maps. Dungeons are not tile-based and don't use
+the catalogue.
+
 The endpoint will attempt to load a source file for any `MapCategory`
 including `Conflict`, but conflict-map *sourcing/selection* (deciding which
 map to serve for a given encounter) isn't implemented yet — that's
@@ -163,6 +174,46 @@ map to serve for a given encounter) isn't implemented yet — that's
 Conflict maps are the one category the client never requests by name up
 front — the server selects the `MapId` when an encounter triggers and hands
 it to the client inside the encounter snapshot.
+
+---
+
+## Persistence
+
+**Status: implemented (Phase 3, step 14).** Mutable game state is stored with
+EF Core and SQLite, in `UltimaExodus.Data/Persistence/`. Map data stays
+file-backed and does not use the database.
+
+- `GameState` holds the party's saved position (`TileX`, `TileY`, `MapId`).
+  Single-player with no login means exactly one row, with a fixed `Id` of 1
+  (the key is never database-generated).
+- Migrations are applied at startup via `Database.Migrate()`. The `.db` file is
+  gitignored.
+- The **action log is not persisted.** It lives in memory on the server
+  (`ActionLog`, a singleton capped at 50 entries), so it survives a page
+  refresh but is cleared when the API restarts.
+
+---
+
+## Overworld endpoints
+
+**Status: implemented (Phase 3).** Both return a full `GameStateSnapshot`.
+
+```
+POST api/overworld/move    body: { "direction": "North" | "South" | "East" | "West" }
+GET  api/overworld/state   (no body; returns the current state without moving)
+```
+
+- The server resolves the move (`OverworldMovement` in `UltimaExodus.Engine/Movement/`:
+  wraps at the map edges, blocks on solid tiles), saves the position, appends a
+  log line (`North`, or `North BLK` when blocked) and returns the snapshot.
+  A blocked move is a normal `200` response with the position unchanged.
+- `direction` is a string enum, applied to the `Direction` type only. A global
+  string-enum converter would also change `MapData.category` from a number to
+  a string.
+- `GET api/overworld/state` creates the default save (tile (5,5) on
+  `world-sosaria`) if none exists. It is safe to call repeatedly.
+- The client keeps one request in flight at a time, since two overlapping moves
+  would both read the same saved position.
 
 ---
 
@@ -244,21 +295,31 @@ combat implementation begins, not discovered incrementally during it.
 
 ```csharp
 public record GameStateSnapshot(
-    DungeonPosition Position,
+    PartyPosition Position,
     List<LogEntry> Log,
     WorldClock Clock,
     List<MapEntity> Entities,
     List<EffectSequence> Effects,
     PartyStatus Party
 );
+
+public record PartyPosition(string MapId, int X, int Y);
+public record LogEntry(string Text);
+public record WorldClock(int Moon1Phase, int Moon2Phase, string Wind);
+public record PartyStatus(List<PartyMemberStatus> Members);
 ```
 
-Returned in full on every action — no diffing on either side. Not yet
-implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
-
+**Status: implemented (Phase 3, steps 16 and 21).** Returned in full on every
+action — no diffing on either side. For now: `Clock` is hardcoded to match the
+old static display; `Party` is a hardcoded stub (four members, mirroring the
+HUD) until Phase 5, and its interior shape may change then; `Entities` and
+`Effects` are always empty until dynamic entities and combat exist. The
+earlier design sketch used a `DungeonPosition` type here; the implemented
+`PartyPosition` (map id plus tile) covers the overworld, and dungeon facing
+and level will be added when the dungeon phase is built.
 ---
 
-## Resolved during Phase 0 / Phase 1 / Phase 2
+## Resolved during Phase 0 / Phase 1 / Phase 2 / Phase 3
 
 - **C# solution/project layout**: `UltimaExodus.Engine` (domain logic, no
   dependencies on the other two), `UltimaExodus.Data` (data loading —
@@ -273,6 +334,15 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
   `drawWindDirection`/`drawPartyPanel`/`drawLogPanel` methods on
   `game/world-scene.ts`'s `WorldScene` class — same shape as the old
   inline-on-`WorldScene.ts` layout, just split into smaller files.
+- **Movement rules location**: `OverworldMovement` in `UltimaExodus.Engine/Movement/`
+  is a pure function (map + position + compass `Direction` in, `MoveResult`
+  out) with no database, HTTP or logging. The endpoint orchestrates it. The
+  client maps keys to compass directions (Up → North).
+- **Tile attribute delivery**: a separate `GET api/tiles` endpoint, cached once
+  by the client — see "Tile catalogue" above.
+- **Action log storage**: held in server memory, not persisted — see
+  "Persistence" above.
+- **Snapshot position type**: `PartyPosition(MapId, X, Y)`, not `DungeonPosition`.
 
 ## Open questions / not yet decided
 
@@ -283,3 +353,5 @@ implemented — this is Phase 3+ territory per `MIGRATION_PLAN.md`.
 - Deployment topology: whether Angular `dist/` will be served by the .NET app
   (same origin, eliminating CORS in production) — deferred but acknowledged
   as an important distinction to settle before cutover
+- Whether the action log should be persisted across API restarts (currently
+  in-memory only)
