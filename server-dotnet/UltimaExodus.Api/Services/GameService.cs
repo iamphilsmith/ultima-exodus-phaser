@@ -59,12 +59,15 @@ public class GameService(UltimaExodusDbContext db, ActionLog log)
     }
 
     private GameStateSnapshot BuildSnapshot(GameState state) => new(
-        Position: new PartyPosition(state.MapId, state.TileX, state.TileY),
+        Position: new PartyPosition(state.MapId, CategoryFor(state.MapId), state.TileX, state.TileY),
         Log: log.GetAll(),
         Clock: StubState.Clock,
         Entities: [],
         Effects: [],
         Party: StubState.Party);
 
+    // Only world maps exist in GameState until step 23h; the location catalogue (23d)
+    // will supply the category for towns and castles in the future.
+    private static MapCategory CategoryFor(string mapId) => MapCategory.World;
  
 }

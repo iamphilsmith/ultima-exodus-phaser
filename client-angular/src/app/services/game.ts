@@ -2,11 +2,13 @@ import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { apiBaseUrl } from '../utils/api-base-url';
+import { MapCategory } from './map';
 
 export type CompassDirection = 'North' | 'East' | 'South' | 'West';
 
 export interface PartyPosition {
     mapId: string;
+    category: MapCategory;
     x: number;
     y: number;
 }

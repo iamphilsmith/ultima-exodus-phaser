@@ -1,7 +1,7 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
 import { CompassDirection, GameStateSnapshot, LogEntry, GameService} from '../services/game';
-import { MapCategory, MapService } from '../services/map';
+import { MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
@@ -108,9 +108,8 @@ export class WorldScene extends Phaser.Scene {
 
   /** Put a snapshot on screen: the viewport with fog, and the log panel. */
   private async applySnapshot(snapshot: GameStateSnapshot): Promise<void> {
-    // The overworld endpoints only serv world maps for now; towns and castles will be handled later.
     const [map] = await Promise.all([
-      this.mapService.getMap(MapCategory.World, snapshot.position.mapId),
+      this.mapService.getMap(snapshot.position.category, snapshot.position.mapId),
       this.tileCatalogue.load(), // no-op after the first call
     ]);
 
