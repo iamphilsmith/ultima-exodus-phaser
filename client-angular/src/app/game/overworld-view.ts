@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MapData } from '../services/map';
-import { PartyPosition } from '../services/overworld';
+import { PartyPosition } from '../services/game';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { canSee } from './line-of-sight';
 import { EGA_BLACK, MAP_X, MAP_Y, TILE, VIEW_TILES } from './shell-layout';

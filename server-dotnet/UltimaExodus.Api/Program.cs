@@ -19,7 +19,7 @@ builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
 );
 
 builder.Services.AddSingleton<ActionLog>();
-builder.Services.AddScoped<OverworldService>();
+builder.Services.AddScoped<GameService>();
 
 builder.Services.AddCors(options =>
 {
@@ -73,19 +73,19 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
 
 app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
 
-app.MapPost("api/overworld/move", async (MoveRequest request, OverworldService overworld) =>
+app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
     if (!Enum.IsDefined(request.Direction))
     {
         return Results.BadRequest($"Unknown direction: {request.Direction}");
     }
 
-    var snapshot = await overworld.MoveAsync(request.Direction);
+    var snapshot = await game.MoveAsync(request.Direction);
     return Results.Ok(snapshot);
 });
 
-app.MapGet("api/overworld/state", async (OverworldService overworld) =>
-    Results.Ok(await overworld.GetStateAsync()));
+app.MapGet("api/state", async (GameService game) =>
+    Results.Ok(await game.GetStateAsync()));
 
 app.Run();
 

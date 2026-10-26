@@ -7,7 +7,7 @@ using UltimaExodus.Engine.State;
 namespace UltimaExodus.Api.Services;
 
 // Primary constructor: db and log are supplied by dependency injection
-public class OverworldService(UltimaExodusDbContext db, ActionLog log)
+public class GameService(UltimaExodusDbContext db, ActionLog log)
 {
     private const int SaveSlotId = 1;
     private const string DefaultMapId = "world-sosaria";

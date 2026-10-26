@@ -1,6 +1,6 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
-import { CompassDirection, GameStateSnapshot, LogEntry, OverworldService } from '../services/overworld';
+import { CompassDirection, GameStateSnapshot, LogEntry, GameService} from '../services/game';
 import { MapCategory, MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
@@ -41,7 +41,7 @@ export class WorldScene extends Phaser.Scene {
   private overworldView!: OverworldView;
 
   constructor(
-    private readonly overworld: OverworldService,
+    private readonly gameService: GameService,
     private readonly mapService: MapService,
     private readonly tileCatalogue: TileCatalogueService
 
@@ -85,7 +85,7 @@ export class WorldScene extends Phaser.Scene {
     // Ignore keys until the saved state is on screen.
     this.requestInFlight = true;
     try {
-      await this.applySnapshot(await this.overworld.getState());
+      await this.applySnapshot(await this.gameService.getState());
     } catch (error) {
       console.error('Could not restore savedstate:', error);
     } finally {
@@ -98,7 +98,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.requestInFlight) return;
     this.requestInFlight = true;
     try {
-      await this.applySnapshot(await this.overworld.move(OVERWORLD_COMPASS[direction]));
+      await this.applySnapshot(await this.gameService.move(OVERWORLD_COMPASS[direction]));
     } catch (error) {
       console.error('Move failed:', error);
     } finally {

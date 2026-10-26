@@ -1,4 +1,4 @@
-import { LogEntry } from '../services/overworld';
+import { LogEntry } from '../services/game';
 
 /** 
  * The text for each row of the log panel, oldest first, so the newest entry

@@ -60,18 +60,18 @@ export interface GameStateSnapshot {
 }
 
 @Service()
-export class OverworldService {
+export class GameService {
     private http = inject(HttpClient);
 
     move(direction: CompassDirection): Promise<GameStateSnapshot> {
         return firstValueFrom(
-            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/move`, { direction })
+            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/move`, { direction })
         );
     }
 
     getState(): Promise<GameStateSnapshot> {
         return firstValueFrom(
-            this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/state`)
+            this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/state`)
         );
     }
 }

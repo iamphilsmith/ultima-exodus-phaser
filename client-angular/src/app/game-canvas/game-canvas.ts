@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, inject } from '@angular/core';
-import { OverworldService } from '../services/overworld';
+import { GameService } from '../services/game';
 import { WorldScene } from '../game/world-scene';
 import { MapService } from '../services/map';
 import { TileCatalogueService } from '../services/tile-catalogue';
@@ -15,7 +15,7 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef<HTMLDivElement>;
 
   private game?: Phaser.Game;
-  private overworld = inject(OverworldService);
+  private overworld = inject(GameService);
   private mapService = inject(MapService);
   private tileCatalogue = inject(TileCatalogueService);
 
