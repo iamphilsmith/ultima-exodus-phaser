@@ -157,6 +157,34 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   differences: the server-held log survives a refresh; the avatar's walking
   bump is not ported; E/A/Esc are not wired yet.
 
+### Phase 4 — Town / castle parity (planned, not started)
+
+Scoping done; nothing built yet. Full step list in `MIGRATION_PLAN.md` (23a-25).
+Decisions: dispatching endpoints (`POST api/move`, `GET api/state`,
+`POST api/interact`); exit position found by reverse lookup in a server-side
+`LocationCatalogue` (no schema change); refresh inside a town resumes there;
+one reused 121-sprite viewport with a no-wrap mode and no fog; collision from the
+server `TileCatalogue`; a Development-only no-clip debug flag; Castle Exodus entry
+left at (32,63), unverified.
+
+Findings from reading the old stack and the map data:
+
+- The old `TownView` kept no town position (only the overworld save moved), so
+  leaving always landed on the location tile. Entry spawns: towns (0,32), castles
+  (32,63). Castle British's gate is at columns 31-33 of the bottom row; Castle
+  Exodus's bottom row has no gate tile, so its spawn is unconfirmed.
+- Every overworld location coordinate in `world-locations.ts` lands on tile 6
+  (towns) or tile 7 (castles), which confirms the table. The old note that the
+  entrance tile is 10 is wrong: tile 10 is a horse.
+- Only `town-lcb` and `world-sosaria` exist in the server's `MapSources/`; the
+  other 11 maps still need copying (step 23a).
+- NPCs, animals and monsters are baked into each map's single tile layer (ids
+  10-30 and 63-79, the latter being second animation frames), replacing the floor
+  tile beneath them. They are not a separate entity layer.
+- The `solid` properties in every committed Tiled JSON are `false` **on purpose**
+  (collision was switched off for easy test navigation). The new stack never reads
+  them; it uses the server `TileCatalogue`.
+
 ### Environment / tooling notes specific to the new stack
 
 - **Angular 22 introduced a genuine `@Service()` decorator**, replacing
@@ -410,11 +438,37 @@ const EGA_WHITE = 0xfcfcfc
 | Water (0) | solid: true |
 | Mountains (4) | solid: true, vision-blocking: true |
 | Forest (3) | vision-blocking: true |
-| Town/castle (10) | solid: false |
+| Horse (10) | *(was mislabelled "Town/castle"; the real entrances are 6 = town, 7 = castle)* |
 
 The new stack's equivalent is `TileCatalogue` (`UltimaExodus.Engine/Terrain/`) — see
 "New Stack Progress" above. Same source values, ported into a C# lookup rather than
-inline map-property reads.
+inline map-property reads. (The Tiled `solid` properties in the committed JSON are
+all `false` on purpose and are not read by the new stack.)
+
+### Tile roles in towns and castles (all share the 80-tile `shapes.png`)
+
+Identified from the reference map images and per-map tile counts. Planned
+catalogue rules (Phase 4, step 23e) in the last column.
+
+| Tiles | What they are | Rule |
+|---|---|---|
+| 0 | Water (also town moats) | solid (existing) |
+| 1, 2 | Ground, brush | walkable |
+| 3 | Forest | vision-blocking only (existing) |
+| 4 | Mountains | solid + vision-blocking (existing) |
+| 8 | Red brick: roads and floors, the most common town tile | walkable |
+| 9 | Chests | walkable (for later interaction) |
+| 10, 11, 13-15, 16-30, 63-79 | Horse, ships, sea creatures, NPCs and monsters (baked into the layer; 63-79 are second animation frames) | solid |
+| 31 | Grey block (the Exodus machine) | solid |
+| 32 | Yellow barred doors | solid (keys/locks deferred) |
+| 33 | Dark red lava-like floor | walkable until damage exists |
+| 34 | Blue star tile (Oracle / Exodus rooms) | walkable (unreachable in practice) |
+| 35 | White block: building and castle walls | solid + vision-blocking |
+| 37-57 | Sign frame and letters: shop signs, counters, tables, cell bars | solid |
+
+The catalogue is shared by every map, so creature tiles are also solid on the
+overworld. Conflict maps (`conflict-grass`, `conflict-shore`) use only tiles 0, 1,
+2, 13, 20 and 24, all covered by these rules.
 
 ---
 

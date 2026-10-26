@@ -152,10 +152,13 @@ tile index to two properties:
   trip per glance.
 
 Any tile index not explicitly listed defaults to non-solid, non-vision-blocking.
-Currently scoped to overworld tiles only. **When expanded to cover
-town/castle/dungeon, conflict maps must be included in the same catalogue
-expansion pass** — not treated as a later addition — since conflict encounters
-will need the same walkability/vision data once combat is implemented.
+Currently scoped to overworld tiles only; **Phase 4 (step 23e) expands it to
+town and castle tiles** (walls, signs and counters, doors, and the NPC/creature
+tiles baked into the tile layer; see `CONTEXT.md` for the tile roles). **Conflict
+maps must be included in the same catalogue expansion pass** — not treated as a
+later addition. Checked during Phase 4 scoping: the two conflict maps use only
+tiles 0, 1, 2, 13, 20 and 24, all covered, so no extra entries are needed. Tile
+solidity comes only from this catalogue, never from the Tiled `solid` properties.
 
 **Delivery — implemented (Phase 3, step 19a).** `GET api/tiles` returns
 `{ default, overrides }`: the few tiles with special rules, keyed by tile
@@ -303,7 +306,7 @@ public record GameStateSnapshot(
     PartyStatus Party
 );
 
-public record PartyPosition(string MapId, int X, int Y);
+public record PartyPosition(string MapId, MapCategory Category, int X, int Y); // Category added in Phase 4, step 23c (serialised as a number)
 public record LogEntry(string Text);
 public record WorldClock(int Moon1Phase, int Moon2Phase, string Wind);
 public record PartyStatus(List<PartyMemberStatus> Members);
@@ -343,6 +346,30 @@ and level will be added when the dungeon phase is built.
 - **Action log storage**: held in server memory, not persisted — see
   "Persistence" above.
 - **Snapshot position type**: `PartyPosition(MapId, X, Y)`, not `DungeonPosition`.
+
+## Decided for Phase 4 (town / castle), not yet implemented
+
+- **Endpoints dispatch on the current map.** `POST api/move`, `GET api/state`
+  and `POST api/interact` replace `api/overworld/move` and `api/overworld/state`
+  (step 23b). The server knows which map the party is on and applies that
+  map's rules (wrapping overworld; non-wrapping town/castle with edge exit), so
+  the client never chooses a rule set. This fits the single-call design and
+  avoids a parallel endpoint set per map type in Phases 5-7.
+- **Locations live on the server.** `LocationCatalogue` (`UltimaExodus.Engine`)
+  holds the 12 overworld entrances (x,y → map id, category, entry tile, enter
+  message). The old client-side `SOSARIA_LOCATIONS` is not ported. Each town or
+  castle has exactly one overworld entrance, so the return tile on exit is a
+  reverse lookup, not stored state, and `GameState` needs no new columns.
+- **Position inside a town is persisted** in the existing `GameState` row, so a
+  refresh resumes in the town (the old build did not).
+- **Movement rules:** `LocationMovement.TryMove` (non-wrapping; results include
+  `Blocked` and `Exited`) sits beside `OverworldMovement`, which is unchanged.
+- **Debug no-clip:** `OverworldMovement` and `LocationMovement` take an
+  `ignoreSolid` flag (default false). It is set only from Development
+  configuration, so production cannot enable it; the pure engine never reads
+  config. Leaving a town by an edge is not collision and still applies.
+- **Client:** one viewport class for every tile-based map, with a no-wrap mode
+  for towns/castles and no fog there (fog in towns is deferred).
 
 ## Open questions / not yet decided
 
