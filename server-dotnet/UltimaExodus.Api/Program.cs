@@ -95,6 +95,9 @@ app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 app.MapGet("api/state", async (GameService game) =>
     Results.Ok(await game.GetStateAsync()));
 
+app.MapPost("api/interact", async (GameService game) =>
+    Results.Ok(await game.InteractAsync()));
+
 app.Run();
 
 

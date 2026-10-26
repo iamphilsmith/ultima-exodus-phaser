@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Options;
+using UltimaExodus.Api.Configuration;
 using UltimaExodus.Data.Maps;
 using UltimaExodus.Data.Persistence;
+using UltimaExodus.Engine.Locations;
 using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
-using UltimaExodus.Api.Configuration;
 
 namespace UltimaExodus.Api.Services;
 
@@ -19,19 +20,83 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
     public async Task<GameStateSnapshot> MoveAsync(Direction direction)
     {
         var state = await GetOrCreateStateAsync();
-        var map = MapSourceLoader.LoadMap(MapCategory.World, state.MapId);
+        var category = CategoryFor(state.MapId);
 
-        var result = OverworldMovement.TryMove(map, state.TileX, state.TileY, direction, ignoreSolid: debug.Value.NoClip);
+        if (category == MapCategory.World)
+        {
+            MoveOnWorld(state, direction);
+        }
+        else
+        {
+            MoveInLocation(state, category, direction);
+        }
+
+        await db.SaveChangesAsync();
+        return BuildSnapshot(state);
+    }
+
+    public async Task<GameStateSnapshot> InteractAsync()
+    {
+        var state = await GetOrCreateStateAsync();
+
+        // Only the overworld has anything to enter. Placeholder text for every
+        // other case, until E does more than this.
+        var location = CategoryFor(state.MapId) == MapCategory.World
+            ? LocationCatalogue.FindByWorldTile(state.MapId, state.TileX, state.TileY)
+            : null;
+
+        if (location is null)
+        {
+            log.Add("Nothing here");
+        }
+        else
+        {
+            state.MapId = location.MapId;
+            state.TileX = location.EntryX;
+            state.TileY = location.EntryY;
+            log.Add(location.EnterMessage);
+        }
+
+        await db.SaveChangesAsync();
+        return BuildSnapshot(state);
+    }
+
+    private void MoveOnWorld(GameState state, Direction direction)
+    {
+        var map = MapSourceLoader.LoadMap(MapCategory.World, state.MapId);
+        var result = OverworldMovement.TryMove(
+            map, state.TileX, state.TileY, direction, ignoreSolid: debug.Value.NoClip);
 
         state.TileX = result.X;
         state.TileY = result.Y;
-
-        await db.SaveChangesAsync();
-
         log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
-
-        return BuildSnapshot(state);
     }
+
+    private void MoveInLocation(GameState state, MapCategory category, Direction direction)
+    {
+        var map = MapSourceLoader.LoadMap(category, state.MapId);
+        var result = LocationMovement.TryMove(
+            map, state.TileX, state.TileY, direction, ignoreSolid: debug.Value.NoClip);
+
+        if (result.Exited)
+        {
+            // Each location has exactly one overworld entrance, so leaving returns there.
+            var location = LocationCatalogue.FindByMapId(state.MapId)!;
+            state.MapId = location.WorldMapId;
+            state.TileX = location.WorldX;
+            state.TileY = location.WorldY;
+            log.Add("Leaving...");
+            return;
+        }
+
+        state.TileX = result.X;
+        state.TileY = result.Y;
+        log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
+    }
+
+    // A map that isn't a location is the overworld. (Dungeons come in a later phase.)
+    private static MapCategory CategoryFor(string mapId)
+        => LocationCatalogue.FindByMapId(mapId)?.Category ?? MapCategory.World;
 
     public async Task<GameStateSnapshot> GetStateAsync()
     {
@@ -67,9 +132,5 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         Entities: [],
         Effects: [],
         Party: StubState.Party);
-
-    // Only world maps exist in GameState until step 23h; the location catalogue (23d)
-    // will supply the category for towns and castles in the future.
-    private static MapCategory CategoryFor(string mapId) => MapCategory.World;
  
 }
