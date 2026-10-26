@@ -7,6 +7,7 @@ using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
 using UltimaExodus.Engine.Terrain;
+using UltimaExodus.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+
+// The Debug section is only read in Development, so setting Debug__NoClip in a
+// production environment will have no effect.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.Configure<DebugOptions>(builder.Configuration.GetSection("Debug"));
+}
 
 var app = builder.Build();
 
