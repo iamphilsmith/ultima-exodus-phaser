@@ -1,13 +1,13 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
-import { CompassDirection, GameStateSnapshot, LogEntry, GameService} from '../services/game';
+import { CompassDirection, GameStateSnapshot, LogEntry, GameService } from '../services/game';
 import { MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
 
 import Phaser from 'phaser';
-import { 
+import {
   BORDER,
   CANVAS_W,
   CANVAS_H,
@@ -19,11 +19,12 @@ import {
   PARTY_H,
   LOG_Y,
   LOG_ROWS,
-  EGA_BLUE,  
+  EGA_BLUE,
   EGA_CYAN,
   EGA_WHITE,
-  CHAR_ARROW_RIGHT } from './shell-layout';
-import { charFrame,writeText } from './bitmap-text';
+  CHAR_ARROW_RIGHT
+} from './shell-layout';
+import { charFrame, writeText } from './bitmap-text';
 
 // Overworld interpretation of the keys. Moves into the overworld view in step 18
 const OVERWORLD_COMPASS: Record<InputDirection, CompassDirection> = {
@@ -45,7 +46,7 @@ export class WorldScene extends Phaser.Scene {
     private readonly mapService: MapService,
     private readonly tileCatalogue: TileCatalogueService
 
-  ) { 
+  ) {
     super('world');
   }
 
@@ -74,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.inputService = new InputService(this);
     this.inputService.onMove((direction) => void this.handleMove(direction));
+    this.inputService.onInteract(() => void this.handleInteract());
     void this.restoreState();
   }
 
@@ -93,17 +95,26 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private async handleMove(direction: InputDirection): Promise<void> {
-    // One request at a time: overlapping moves would race on the server.
+  /** Run a server call and put its snapshot on screen. One request at a time:
+   *  overlapping calls would race on the server. */
+  private async request(action: () => Promise<GameStateSnapshot>, failureMessage: string): Promise<void> {
     if (this.requestInFlight) return;
     this.requestInFlight = true;
     try {
-      await this.applySnapshot(await this.gameService.move(OVERWORLD_COMPASS[direction]));
+      await this.applySnapshot(await action());
     } catch (error) {
-      console.error('Move failed:', error);
+      console.error(failureMessage, error);
     } finally {
       this.requestInFlight = false;
     }
+  }
+
+  private async handleMove(direction: InputDirection): Promise<void> {
+    return this.request(() => this.gameService.move(OVERWORLD_COMPASS[direction]), 'Move failed:');
+  }
+
+  private handleInteract(): Promise<void> {
+    return this.request(() => this.gameService.interact(), 'Interact failed:');
   }
 
   /** Put a snapshot on screen: the viewport with fog, and the log panel. */
@@ -129,7 +140,7 @@ export class WorldScene extends Phaser.Scene {
     g.setDepth(2);
     g.fillStyle(EGA_BLUE);
     g.fillRect(0, 0, BORDER, CANVAS_H);
-    g.fillRect(CANVAS_W - BORDER, 0, BORDER, (CHAR_H *4) * 4 + BORDER);
+    g.fillRect(CANVAS_W - BORDER, 0, BORDER, (CHAR_H * 4) * 4 + BORDER);
     g.fillRect(0, 0, MAP_X + MAP_PX + BORDER, BORDER);
     g.fillRect(0, CANVAS_H - BORDER, MAP_X + MAP_PX + BORDER, BORDER);
     g.fillRect(MAP_X + MAP_PX, 0, BORDER, CANVAS_H);

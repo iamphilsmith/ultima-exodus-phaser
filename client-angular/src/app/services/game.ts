@@ -76,4 +76,10 @@ export class GameService {
             this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/state`)
         );
     }
+
+    interact(): Promise<GameStateSnapshot> {
+        return firstValueFrom(
+            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/interact`, {})
+        );
+    }
 }
