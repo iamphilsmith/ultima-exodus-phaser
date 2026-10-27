@@ -66,4 +66,33 @@ public class OverworldMovementTests
         var result = OverworldMovement.TryMove(Map, 0, 0, Direction.North);
         Assert.Equal(new MoveResult(0, 0, true), result);
     }
+
+    [Fact]
+    public void NoClip_allows_moving_onto_water()
+    {
+        var result = OverworldMovement.TryMove(Map, 1, 1, Direction.East, ignoreSolid: true);
+        Assert.Equal(new MoveResult(2, 1, false), result);
+    }
+
+    [Fact]
+    public void NoClip_allows_moving_onto_a_mountain()
+    {
+        var result = OverworldMovement.TryMove(Map, 0, 1, Direction.South, ignoreSolid: true);
+        Assert.Equal(new MoveResult(0, 2, false), result);
+    }
+
+    [Fact]
+    public void NoClip_off_still_blocks()
+    {
+        var result = OverworldMovement.TryMove(Map, 1, 1, Direction.East, ignoreSolid: false);
+        Assert.Equal(new MoveResult(1, 1, true), result);
+    }
+
+    [Fact]
+    public void NoClip_still_wraps_at_the_edges()
+    {
+        var result = OverworldMovement.TryMove(Map, 2, 0, Direction.East, ignoreSolid: true);
+        Assert.Equal(new MoveResult(0, 0, false), result);
+    }
+
 }

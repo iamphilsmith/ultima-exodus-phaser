@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { MapData } from '../services/map';
-import { PartyPosition } from '../services/overworld';
+import { MapCategory, MapData } from '../services/map';
+import { lookupTile } from './map-tile';
+import { PartyPosition } from '../services/game';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { canSee } from './line-of-sight';
 import { EGA_BLACK, MAP_X, MAP_Y, TILE, VIEW_TILES } from './shell-layout';
@@ -8,11 +9,6 @@ import { EGA_BLACK, MAP_X, MAP_Y, TILE, VIEW_TILES } from './shell-layout';
 const VIEW_RADIUS = Math.floor(VIEW_TILES / 2); // 5 tiles either side of the party
 const AVATAR_FRAME = 20; // party avatar in the 'tiles' sheet
 const FOG_ALPHA = 0.9;
-
-/** Wrap a coordinate onto the map. (C#'s and JS's % can both go negative.) */
-export function wrap(value: number, size: number): number {
-  return ((value % size) + size) % size;
-}
 
 /**
  * Draws the 11x11 window of the overworld around the party, with fog of war.
@@ -23,12 +19,15 @@ export class OverworldView {
   private tileSprites: Phaser.GameObjects.Image[][] = [];
   private avatar: Phaser.GameObjects.Image;
   private fog: Phaser.GameObjects.Graphics;
+  private readonly wraps: boolean;
 
   constructor(
     scene: Phaser.Scene,
     private readonly map: MapData,
     private readonly tiles: TileCatalogueService
   ) {
+    this.wraps = map.category === MapCategory.World;
+
     for (let row = 0; row < VIEW_TILES; row++) {
       this.tileSprites[row] = [];
       for (let col = 0; col < VIEW_TILES; col++) {
@@ -53,20 +52,41 @@ export class OverworldView {
     this.avatar.setVisible(false);
   }
 
+  get mapId(): string {
+    return this.map.mapId;
+  }
+
   render(position: PartyPosition): void {
     for (let row = 0; row < VIEW_TILES; row++) {
       for (let col = 0; col < VIEW_TILES; col++) {
+
+        // const tile = this.tileAt(position.x - VIEW_RADIUS + col, position.y - VIEW_RADIUS + row);
+        // this.tileSprites[row][col].setFrame(tile).setVisible(true);
+
         const tile = this.tileAt(position.x - VIEW_RADIUS + col, position.y - VIEW_RADIUS + row);
-        this.tileSprites[row][col].setFrame(tile).setVisible(true);
+        const sprite = this.tileSprites[row][col];
+        if (tile === undefined) {
+          sprite.setVisible(false);
+        } else {
+          sprite.setFrame(tile).setVisible(true);
+        }
       }
     }
     this.avatar.setVisible(true);
-    this.renderFog(position);
+
+    if (this.wraps) {
+      this.renderFog(position);
+    } else {
+      this.fog.clear(); // no fog in towns or castles (the old build had none)
+    }
+
   }
 
   private renderFog(position: PartyPosition): void {
-    const blocksVisionAt = (dx: number, dy: number): boolean =>
-      this.tiles.getProperties(this.tileAt(position.x + dx, position.y + dy)).visionBlocking;
+    const blocksVisionAt = (dx: number, dy: number): boolean => {
+      const tile = this.tileAt(position.x + dx, position.y + dy);
+      return tile !== undefined && this.tiles.getProperties(tile).visionBlocking;
+    };
 
     this.fog.clear();
     for (let row = 0; row < VIEW_TILES; row++) {
@@ -79,12 +99,19 @@ export class OverworldView {
     }
   }
 
-  /**
-   * The tile at a map coordinate, wrapping at the edges. The server's tile
-   * numbers are already 0-based, so they are the sheet frame numbers (the old
-   * client needed `tile.index - 1`).
-   */
-  private tileAt(x: number, y: number): number {
-    return this.map.tiles[wrap(y, this.map.height) * this.map.width + wrap(x, this.map.width)];
+  private tileAt(x: number, y: number): number | undefined {
+    return lookupTile(this.map, x, y, this.wraps);
+  }
+
+  /** Remove everything this view added to the scene, so a new map can take its place. */
+  destroy(): void {
+    for (const row of this.tileSprites) {
+      for (const img of row) {
+        img.destroy();
+      }
+    }
+    this.tileSprites = [];
+    this.avatar.destroy();
+    this.fog.destroy();
   }
 }

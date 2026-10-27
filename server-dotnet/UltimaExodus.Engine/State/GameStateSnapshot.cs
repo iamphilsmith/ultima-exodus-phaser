@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace UltimaExodus.Engine.State;
 
-public record PartyPosition(string MapId, int X, int Y);
+public record PartyPosition(string MapId, MapCategory Category, int X, int Y);
 
 public record LogEntry(string Text);
 

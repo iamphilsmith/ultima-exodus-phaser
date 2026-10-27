@@ -2,11 +2,13 @@ import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { apiBaseUrl } from '../utils/api-base-url';
+import { MapCategory } from './map';
 
 export type CompassDirection = 'North' | 'East' | 'South' | 'West';
 
 export interface PartyPosition {
     mapId: string;
+    category: MapCategory;
     x: number;
     y: number;
 }
@@ -60,18 +62,24 @@ export interface GameStateSnapshot {
 }
 
 @Service()
-export class OverworldService {
+export class GameService {
     private http = inject(HttpClient);
 
     move(direction: CompassDirection): Promise<GameStateSnapshot> {
         return firstValueFrom(
-            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/move`, { direction })
+            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/move`, { direction })
         );
     }
 
     getState(): Promise<GameStateSnapshot> {
         return firstValueFrom(
-            this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/overworld/state`)
+            this.http.get<GameStateSnapshot>(`${apiBaseUrl()}/api/state`)
+        );
+    }
+
+    interact(): Promise<GameStateSnapshot> {
+        return firstValueFrom(
+            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/interact`, {})
         );
     }
 }

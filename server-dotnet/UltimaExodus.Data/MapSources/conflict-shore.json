@@ -1,0 +1,207 @@
+{
+    "compressionlevel": -1,
+    "height": 11,
+    "width": 11,
+    "infinite": false,
+    "orientation": "orthogonal",
+    "renderorder": "right-down",
+    "tileheight": 16,
+    "tilewidth": 16,
+    "type": "map",
+    "version": "1.10",
+    "layers": [
+        {
+            "id": 1,
+            "name": "conflict-shore-layer",
+            "type": "tilelayer",
+            "width": 11,
+            "height": 11,
+            "opacity": 1.0,
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "data": [
+
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                1,
+                14,
+                1,
+                14,
+                1,
+                1,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                14,
+                1,
+                1,
+                1,
+                1,
+                14,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                1,
+                14,
+                1,
+                14,
+                14,
+                1,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+
+                1,
+                1,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                1,
+                1,
+                1,
+
+                1,
+                2,
+                2,
+                21,
+                2,
+                2,
+                21,
+                2,
+                2,
+                1,
+                1,
+
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                1,
+
+                2,
+                2,
+                21,
+                2,
+                2,
+                2,
+                2,
+                21,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "properties": [
+                {
+                    "name": "collider",
+                    "type": "bool",
+                    "value": false
+                }
+            ]
+        }
+    ],
+    "tilesets": [
+        {
+            "firstgid": 1,
+            "name": "conflict-shore",
+            "tilewidth": 16,
+            "tileheight": 16,
+            "margin": 0,
+            "spacing": 0,
+            "columns": 10,
+            "tilecount": 80,
+            "image": "shapes.png",
+            "imagewidth": 160,
+            "imageheight": 128,
+            "tiles": [
+                {
+                    "id": 0,
+                    "properties": [
+                        {
+                            "name": "solid",
+                            "type": "bool",
+                            "value": false
+                        }
+                    ]
+                },
+                {
+                    "id": 35,
+                    "properties": [
+                        {
+                            "name": "solid",
+                            "type": "bool",
+                            "value": false
+                        },
+                        {
+                            "name": "vision-blocking",
+                            "type": "bool",
+                            "value": false
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -28,10 +28,13 @@ server-dotnet/
   UltimaExodus.Engine/   — domain logic, no dependencies on the other two projects
     Terrain/             — TileProperties, TileCatalogue, TileCatalogueSnapshot
     Maps/                — MapCategory, MapData, MapEntity
-    Movement/            — Direction, MoveResult, OverworldMovement
+    Locations/           — LocationDef, LocationCatalogue (the 12 overworld entrances)
+    Movement/            — Direction, DirectionExtensions, MoveResult, OverworldMovement,
+                           LocationMoveResult, LocationMovement
     State/               — GameStateSnapshot (+ PartyPosition, LogEntry, WorldClock,
                            EffectSequence), PartyStatus, StubState, ActionLog
-  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules (movement, catalogue)
+  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules (movement, catalogue, locations);
+                           references Data too, for the map-backed location tests
   UltimaExodus.Data/     — data loading; depends on Engine
     Maps/                — TiledMapJson, MapSourceLoader
     MapSources/           — Tiled JSON source files, copied here from assets/maps/
@@ -40,20 +43,23 @@ server-dotnet/
     Migrations/          — EF Core migrations (InitialGameState)
   UltimaExodus.Api/      — HTTP endpoints; depends on both Engine and Data
     Contracts/           — MoveRequest
-    Services/            — OverworldService (move/state orchestration)
+    Configuration/       — DebugOptions (Debug:NoClip, read in Development only)
+    Services/            — GameService (move/interact/state orchestration)
 
 client-angular/
   src/app/
     services/
       map.ts             — MapService, plus MapCategory/MapData TS mirrors of the C# types
-      overworld.ts       — OverworldService (move/state calls) and the snapshot interfaces
+      game.ts            — GameService (move/interact/state calls) and the snapshot interfaces
       tile-catalogue.ts  — TileCatalogueService (fetches api/tiles once)
     utils/api-base-url.ts — apiBaseUrl(), shared by every service that calls the API
     game-canvas/          — hosts the Phaser instance; injects services and hands them
                             to WorldScene
     game/
       world-scene.ts      — WorldScene: HUD chrome, input handling, applies snapshots
-      overworld-view.ts   — 11x11 viewport, avatar and fog
+      overworld-view.ts   — 11x11 viewport, avatar and fog; used for every tile-based map
+                            (no-wrap mode and no fog for towns and castles)
+      map-tile.ts         — wrap() and lookupTile(): pure, unit-tested tile lookup
       line-of-sight.ts    — canSee(): pure line-of-sight function for fog of war
       input-service.ts, input-direction.ts — keyboard input
       log-rows.ts         — pads the server log into log-panel rows
@@ -119,6 +125,11 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 
 ### Phase 3 — Overworld movement loop ✅ complete
 
+> Route and class names in this section are as built in Phase 3. Phase 4 step
+> 23b renamed them: `api/overworld/move` and `api/overworld/state` are now
+> `api/move` and `api/state`, `OverworldService` is `GameService`, and the
+> client's `services/overworld.ts` is `services/game.ts`.
+
 - **Step 14** — `GameState` entity and `UltimaExodusDbContext`
   (`UltimaExodus.Data/Persistence/`), EF Core + SQLite. One row, `Id` always 1
   (`ValueGeneratedNever`). `InitialGameState` migration applied at startup via
@@ -156,6 +167,67 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
   wrapping, blocked moves, fog, save/restore). No fix commit needed. Known
   differences: the server-held log survives a refresh; the avatar's walking
   bump is not ported; E/A/Esc are not wired yet.
+
+### Phase 4 — Town / castle parity ✅ complete
+
+Full step list in `MIGRATION_PLAN.md` (23a-25). Entering, walking and leaving all
+12 towns and castles works end to end; the server decides everything and the
+client only draws.
+
+- **Endpoints** — `POST api/move`, `GET api/state`, `POST api/interact` (E). They
+  dispatch on the map the party is on (`GameService.CategoryFor`: a map in
+  `LocationCatalogue` is a location; anything else is the overworld).
+- **Locations** — `LocationCatalogue` (`UltimaExodus.Engine/Locations/`) holds the
+  12 entrances: overworld x,y, map id (the file name, e.g. `town-devil-guard`),
+  category, spawn tile and enter message. Forward lookup (`FindByWorldTile`) on E;
+  reverse lookup (`FindByMapId`) on exit, since each location has exactly one
+  entrance. No schema change: `GameState.MapId`/`TileX`/`TileY` hold the town
+  position while inside, so a refresh resumes in the town (the old build did not).
+- **Movement** — `LocationMovement.TryMove` (non-wrapping; `LocationMoveResult`
+  has `Blocked` and `Exited`) beside the unchanged `OverworldMovement`. Direction
+  offsets shared via `DirectionExtensions.ToOffset`.
+- **Collision** — `TileCatalogue` now covers town and castle tiles (see "Tile
+  roles" below). The client gets it through `GET api/tiles` with no changes.
+- **Messages** — enter: the location's message (e.g. `Britain`); leave:
+  `Leaving...`; E anywhere with nothing to do: `Nothing here`; blocked: `<Dir> BLK`.
+- **Client** — `OverworldView` is reused for every tile-based map. It has
+  `destroy()` and a `mapId` getter; `WorldScene` rebuilds it when the snapshot's
+  `mapId` changes. For town/castle maps (`map.category !== World`) out-of-bounds
+  tiles are hidden and fog is skipped. `PartyPosition` carries `category`, so the
+  client no longer hardcodes `World`. E is wired through `InputService.onInteract`
+  to `GameService.interact()`; move and interact share one in-flight guard.
+- **Debug no-clip** — `Debug:NoClip` (`DebugOptions`), honoured in Development
+  only, makes solid tiles passable (edge exits still apply). Run
+  `dotnet run --launch-profile http-noclip` (sets `Debug__NoClip=true`); a plain
+  `dotnet run` has real collision. Read at startup, so changing it needs a restart.
+- **Parity script** — `scripts/parity-check.ps1` walks the party into and out of
+  all 12 locations through the API (needs the no-clip profile) and checks 8 things
+  per location; all 96 pass. Re-run it after any change to movement, locations or
+  the service. Leave the party on the overworld before running.
+
+Findings from reading the old stack and the map data:
+
+- The old `TownView` kept no town position (only the overworld save moved), so
+  leaving always landed on the location tile. Entry spawns: towns (0,32), castles
+  (32,63). Castle Exodus's bottom row has no gate tile, which made its (32,63)
+  spawn look doubtful, but it was checked in play and is correct.
+- Every overworld location coordinate in `world-locations.ts` lands on tile 6
+  (towns) or tile 7 (castles), which confirms the table (and a unit test keeps it
+  true). The old note that the entrance tile is 10 was wrong: tile 10 is a horse.
+- NPCs, animals and monsters are baked into each map's single tile layer (ids
+  10-30 and 63-79, the latter being second animation frames), replacing the floor
+  tile beneath them. They are not a separate entity layer.
+- The `solid` properties in every committed Tiled JSON are `false` **on purpose**
+  (collision was switched off for easy test navigation). The new stack never reads
+  them; it uses the server `TileCatalogue`.
+- Conflict maps use only tiles 0, 1, 2, 13, 20 and 24, all covered by the
+  catalogue. Their party and monster tiles are baked in too, so they are solid;
+  Phase 7 should revisit that when units move.
+
+Known differences from the old build: refresh inside a town resumes in the town;
+the two baked-in overworld creatures (a sea serpent and a tile-24 monster) are
+now solid; the old debug log of `[x,y]` on E over a plain overworld tile is gone
+(it logs `Nothing here`).
 
 ### Environment / tooling notes specific to the new stack
 
@@ -247,8 +319,21 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - **Overlapping move requests race on the server** (both read the same saved
   row). The scene allows one request in flight (`requestInFlight`), also used
   while restoring state on load.
-- **`GET api/overworld/state` has one side effect**: on a fresh database it
+- **`GET api/state` has one side effect**: on a fresh database it
   creates the default save row. It is idempotent.
+- **Don't name a field or constructor parameter `game` on a `Phaser.Scene`**:
+  `Phaser.Scene` already has a `game` property (the `Phaser.Game`), and
+  TypeScript reports `Property 'game' is private in type ... but not in type 'Scene'`.
+  `GameCanvas` also has its own `game?: Phaser.Game`. The injected service is
+  `gameService` in both.
+- **In PowerShell, don't name a helper `Move`**: it is an alias for `Move-Item`
+  and aliases beat functions, so `Move $dir` tries to move a file. The parity
+  script uses `Move-Party`.
+- **`TileCatalogue` static fields initialise in the order written**:
+  `Blocking` must be declared above `Overrides`, which calls `BuildOverrides()`.
+  `Enumerable.Range` takes a count, not an end value (37-57 is `Range(37, 21)`).
+- **`Debug:NoClip` is read once at startup** (and only bound in Development), so
+  editing it or the launch profile needs an API restart.
 
 ---
 
@@ -269,7 +354,7 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 
 *(Old implementation. The thick-client/dumb-server split below is being replaced
 by a server-authoritative model — see [`ARCHITECTURE.md`](./ARCHITECTURE.md);
-Phase 0 and Phase 1 of that migration are already complete to Phases 0–3 of that migration are already complete.
+Phases 0–4 of that migration are already complete.
 The rendering-only decisions here, e.g. camera and Phaser-canvas UI, are
 expected to hold regardless of backend, since they concern the client's display
 layer only.)*
@@ -410,11 +495,37 @@ const EGA_WHITE = 0xfcfcfc
 | Water (0) | solid: true |
 | Mountains (4) | solid: true, vision-blocking: true |
 | Forest (3) | vision-blocking: true |
-| Town/castle (10) | solid: false |
+| Horse (10) | *(was mislabelled "Town/castle"; the real entrances are 6 = town, 7 = castle)* |
 
 The new stack's equivalent is `TileCatalogue` (`UltimaExodus.Engine/Terrain/`) — see
 "New Stack Progress" above. Same source values, ported into a C# lookup rather than
-inline map-property reads.
+inline map-property reads. (The Tiled `solid` properties in the committed JSON are
+all `false` on purpose and are not read by the new stack.)
+
+### Tile roles in towns and castles (all share the 80-tile `shapes.png`)
+
+Identified from the reference map images and per-map tile counts. The
+last column is the rule now in `TileCatalogue` (Phase 4, step 23e).
+
+| Tiles | What they are | Rule |
+|---|---|---|
+| 0 | Water (also town moats) | solid (existing) |
+| 1, 2 | Ground, brush | walkable |
+| 3 | Forest | vision-blocking only (existing) |
+| 4 | Mountains | solid + vision-blocking (existing) |
+| 8 | Red brick: roads and floors, the most common town tile | walkable |
+| 9 | Chests | walkable (for later interaction) |
+| 10, 11, 13-15, 16-30, 63-79 | Horse, ships, sea creatures, NPCs and monsters (baked into the layer; 63-79 are second animation frames) | solid |
+| 31 | Grey block (the Exodus machine) | solid |
+| 32 | Yellow barred doors | solid (keys/locks deferred) |
+| 33 | Dark red lava-like floor | walkable until damage exists |
+| 34 | Blue star tile (Oracle / Exodus rooms) | walkable (unreachable in practice) |
+| 35 | White block: building and castle walls | solid + vision-blocking |
+| 37-57 | Sign frame and letters: shop signs, counters, tables, cell bars | solid |
+
+The catalogue is shared by every map, so creature tiles are also solid on the
+overworld. Conflict maps (`conflict-grass`, `conflict-shore`) use only tiles 0, 1,
+2, 13, 20 and 24, all covered by these rules.
 
 ---
 
@@ -461,7 +572,7 @@ inline map-property reads.
   this note for Phase 2/7 scoping.
 
 ### Still To Do 📋
-- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phases 0-3 complete — see "New Stack Progress" above)
+- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phases 0-4 complete — see "New Stack Progress" above)
 - Wire real moon phase data to `drawMoonPhase()`
 - Wire real wind direction data to `drawWindDirection()`
 - Populate party panel from real character data (BCD-encoded, from ROSTER.ULT / PARTY.ULT)

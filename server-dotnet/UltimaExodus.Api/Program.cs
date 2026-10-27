@@ -7,6 +7,7 @@ using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
 using UltimaExodus.Engine.Terrain;
+using UltimaExodus.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,7 @@ builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
 );
 
 builder.Services.AddSingleton<ActionLog>();
-builder.Services.AddScoped<OverworldService>();
+builder.Services.AddScoped<GameService>();
 
 builder.Services.AddCors(options =>
 {
@@ -34,6 +35,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+
+// The Debug section is only read in Development, so setting Debug__NoClip in a
+// production environment will have no effect.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.Configure<DebugOptions>(builder.Configuration.GetSection("Debug"));
+}
 
 var app = builder.Build();
 
@@ -73,19 +81,22 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
 
 app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
 
-app.MapPost("api/overworld/move", async (MoveRequest request, OverworldService overworld) =>
+app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
     if (!Enum.IsDefined(request.Direction))
     {
         return Results.BadRequest($"Unknown direction: {request.Direction}");
     }
 
-    var snapshot = await overworld.MoveAsync(request.Direction);
+    var snapshot = await game.MoveAsync(request.Direction);
     return Results.Ok(snapshot);
 });
 
-app.MapGet("api/overworld/state", async (OverworldService overworld) =>
-    Results.Ok(await overworld.GetStateAsync()));
+app.MapGet("api/state", async (GameService game) =>
+    Results.Ok(await game.GetStateAsync()));
+
+app.MapPost("api/interact", async (GameService game) =>
+    Results.Ok(await game.InteractAsync()));
 
 app.Run();
 

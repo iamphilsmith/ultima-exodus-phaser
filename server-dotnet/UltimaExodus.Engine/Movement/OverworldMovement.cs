@@ -5,23 +5,16 @@ namespace UltimaExodus.Engine.Movement;
 
 public static class OverworldMovement
 {
-    public static MoveResult TryMove(MapData map, int x, int y, Direction direction)
+    public static MoveResult TryMove(MapData map, int x, int y, Direction direction, bool ignoreSolid = false)
     {
-        var (dx, dy) = direction switch
-        {
-            Direction.North => (0, -1),
-            Direction.South => (0, 1),
-            Direction.East  => (1, 0),
-            Direction.West  => (-1, 0),
-            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-        };
+        var (dx, dy) = direction.ToOffset();
 
         var targetX = Wrap(x + dx, map.Width);
         var targetY = Wrap(y + dy, map.Height);
 
         // Tiles is a flat, row-major array: index = row * width + column.
         var tileIndex = map.Tiles[targetY * map.Width + targetX];
-        var blocked = TileCatalogue.GetProperties(tileIndex).Solid;
+        var blocked = !ignoreSolid && TileCatalogue.GetProperties(tileIndex).Solid;
 
         return blocked
             ? new MoveResult(x, y, Blocked: true)
