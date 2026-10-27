@@ -53,6 +53,10 @@ export class OverworldView {
     this.avatar.setVisible(false);
   }
 
+  get mapId(): string {
+    return this.map.mapId;
+  }
+
   render(position: PartyPosition): void {
     for (let row = 0; row < VIEW_TILES; row++) {
       for (let col = 0; col < VIEW_TILES; col++) {
@@ -86,5 +90,17 @@ export class OverworldView {
    */
   private tileAt(x: number, y: number): number {
     return this.map.tiles[wrap(y, this.map.height) * this.map.width + wrap(x, this.map.width)];
+  }
+
+  /** Remove everything this view added to the scene, so a new map can take its place. */
+  destroy(): void {
+    for (const row of this.tileSprites) {
+      for (const img of row) {
+        img.destroy();
+      }
+    }
+    this.tileSprites = [];
+    this.avatar.destroy();
+    this.fog.destroy();
   }
 }

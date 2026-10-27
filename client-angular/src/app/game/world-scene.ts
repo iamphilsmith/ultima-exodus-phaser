@@ -38,7 +38,7 @@ export class WorldScene extends Phaser.Scene {
   private logMessages: string[] = ['', '', '', '', '', '', ''];
   private inputService!: InputService;
   private requestInFlight = false;
-  private overworldView!: OverworldView;
+  private overworldView?: OverworldView;
 
   constructor(
     private readonly gameService: GameService,
@@ -113,8 +113,14 @@ export class WorldScene extends Phaser.Scene {
       this.tileCatalogue.load(), // no-op after the first call
     ]);
 
-    this.overworldView ??= new OverworldView(this, map, this.tileCatalogue);
-    this.overworldView.render(snapshot.position);
+    let view = this.overworldView;
+    if (view?.mapId !== map.mapId) {
+      view?.destroy();
+      view = new OverworldView(this, map, this.tileCatalogue);
+      this.overworldView = view;
+    }
+    view.render(snapshot.position);
+
     this.showLog(snapshot.log);
   }
 
