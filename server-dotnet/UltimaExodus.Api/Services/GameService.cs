@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using UltimaExodus.Api.Configuration;
 using UltimaExodus.Data.Maps;
 using UltimaExodus.Data.Persistence;
@@ -32,7 +33,7 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         }
 
         await db.SaveChangesAsync();
-        return BuildSnapshot(state);
+        return await BuildSnapshotAsync(state);
     }
 
     public async Task<GameStateSnapshot> InteractAsync()
@@ -58,7 +59,7 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         }
 
         await db.SaveChangesAsync();
-        return BuildSnapshot(state);
+        return await BuildSnapshotAsync(state);
     }
 
     private void MoveOnWorld(GameState state, Direction direction)
@@ -101,7 +102,7 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
     public async Task<GameStateSnapshot> GetStateAsync()
     {
         var state = await GetOrCreateStateAsync();
-        return BuildSnapshot(state);
+        return await BuildSnapshotAsync(state);
     }
 
     private async Task<GameState> GetOrCreateStateAsync()
@@ -125,12 +126,24 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         return state;
     }
 
-    private GameStateSnapshot BuildSnapshot(GameState state) => new(
+    private async Task<GameStateSnapshot> BuildSnapshotAsync(GameState state) => new(
         Position: new PartyPosition(state.MapId, CategoryFor(state.MapId), state.TileX, state.TileY),
         Log: log.GetAll(),
         Clock: StubState.Clock,
         Entities: [],
         Effects: [],
-        Party: StubState.Party);
+        Party: await LoadPartyAsync());
+
+    private async Task<PartyStatus> LoadPartyAsync()
+    {
+        var slots = await db.PartySlots.AsNoTracking().ToListAsync();
+        var heroIds = slots.Select(s => s.HeroId).ToList();
+        var heroes = await db.Heroes
+            .AsNoTracking()
+            .Where(h => heroIds.Contains(h.Id))
+            .ToListAsync();
+
+        return PartyStatusBuilder.Build(slots, heroes);
+    }
  
 }
