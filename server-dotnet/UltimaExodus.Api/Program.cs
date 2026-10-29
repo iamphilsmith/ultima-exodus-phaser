@@ -104,6 +104,16 @@ app.MapPost("api/roster/create", async (CreateHeroRequest request, RosterService
     return Results.Ok(await roster.CreateHeroAsync(request));
 });
 
+app.MapPost("api/roster/terminate", async (TerminateHeroRequest request, RosterService roster) =>
+{
+    if (request.Entry < 1 || request.Entry > HeroLimits.RosterSize)
+    {
+        return Results.BadRequest($"Entry must be between 1 and {HeroLimits.RosterSize}");
+    }
+
+    return Results.Ok(await roster.TerminateHeroAsync(request.Entry));
+});
+
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
     if (!Enum.IsDefined(request.Direction))

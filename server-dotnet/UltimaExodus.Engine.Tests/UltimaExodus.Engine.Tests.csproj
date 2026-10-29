@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UltimaExodus.Engine\UltimaExodus.Engine.csproj" />
     <ProjectReference Include="..\UltimaExodus.Data\UltimaExodus.Data.csproj" />
+    <ProjectReference Include="..\UltimaExodus.Api\UltimaExodus.Api.csproj" />
   </ItemGroup>
 
 </Project>

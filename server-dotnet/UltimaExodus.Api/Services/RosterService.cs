@@ -53,4 +53,24 @@ public class RosterService(UltimaExodusDbContext db)
 
         return new CreateHeroResult(CreateHeroStatus.Created, entry, await GetRosterAsync());
     }
+
+    public async Task<TerminateHeroResult> TerminateHeroAsync(int entry)
+    {
+        // Only active heroes count: a terminated hero no longer occupies its entry.
+        var hero = await db.Heroes
+            .FirstOrDefaultAsync(h => !h.Terminated && h.RosterEntry == entry);
+
+        var inParty = hero is not null
+            && await db.PartySlots.AnyAsync(p => p.HeroId == hero.Id);
+
+        var status = Roster.CheckTerminate(occupied: hero is not null, inParty: inParty);
+
+        if (status == TerminateResult.Terminated)
+        {
+            hero!.Terminated = true;
+            await db.SaveChangesAsync();
+        }
+
+        return new TerminateHeroResult(status, await GetRosterAsync());
+    }
 }

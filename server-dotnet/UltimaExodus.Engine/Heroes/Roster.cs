@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace UltimaExodus.Engine.Heroes;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TerminateResult { Terminated, Empty, InParty }
 
 public static class Roster
