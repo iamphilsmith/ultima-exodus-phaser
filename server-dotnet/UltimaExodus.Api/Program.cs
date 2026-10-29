@@ -22,7 +22,7 @@ builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
 
 builder.Services.AddSingleton<ActionLog>();
 builder.Services.AddScoped<GameService>();
-
+builder.Services.AddScoped<RosterService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularDev", policy =>
@@ -83,6 +83,9 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
 app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
 
 app.MapGet("api/hero-options", () => HeroOptions.GetSnapshot());
+
+app.MapGet("api/roster", async (RosterService roster) =>
+    Results.Ok(await roster.GetRosterAsync()));
 
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
