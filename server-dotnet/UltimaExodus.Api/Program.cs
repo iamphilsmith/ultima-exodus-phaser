@@ -7,6 +7,7 @@ using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
 using UltimaExodus.Engine.Terrain;
+using UltimaExodus.Engine.Heroes;
 using UltimaExodus.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,6 +81,8 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
 });
 
 app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
+
+app.MapGet("api/hero-options", () => HeroOptions.GetSnapshot());
 
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
