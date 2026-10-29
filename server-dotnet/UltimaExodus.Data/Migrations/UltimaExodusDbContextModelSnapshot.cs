@@ -35,6 +35,109 @@ namespace UltimaExodus.Data.Migrations
 
                     b.ToTable("GameStates");
                 });
+
+            modelBuilder.Entity("UltimaExodus.Engine.Heroes.Hero", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Dexterity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Experience")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Food")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Gold")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HitPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Intelligence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MagicPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxHitPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxMagicPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Race")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RosterEntry")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Sex")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Strength")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Terminated")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Wisdom")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RosterEntry")
+                        .IsUnique()
+                        .HasFilter("Terminated = 0");
+
+                    b.ToTable("Heroes");
+                });
+
+            modelBuilder.Entity("UltimaExodus.Engine.Heroes.PartySlot", b =>
+                {
+                    b.Property<int>("SlotIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HeroId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("SlotIndex");
+
+                    b.HasIndex("HeroId")
+                        .IsUnique();
+
+                    b.ToTable("PartySlots");
+                });
+
+            modelBuilder.Entity("UltimaExodus.Engine.Heroes.PartySlot", b =>
+                {
+                    b.HasOne("UltimaExodus.Engine.Heroes.Hero", null)
+                        .WithMany()
+                        .HasForeignKey("HeroId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
 #pragma warning restore 612, 618
         }
     }

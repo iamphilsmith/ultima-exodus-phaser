@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UltimaExodus.Engine.Heroes;
 
 namespace UltimaExodus.Data.Persistence;
 
@@ -10,6 +11,8 @@ public class UltimaExodusDbContext : DbContext
     }
 
     public DbSet<GameState> GameStates => Set<GameState>();
+    public DbSet<Hero> Heroes => Set<Hero>();
+    public DbSet<PartySlot> PartySlots => Set<PartySlot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,5 +21,40 @@ public class UltimaExodusDbContext : DbContext
         modelBuilder.Entity<GameState>()
             .Property(g => g.Id)
             .ValueGeneratedNever();
+
+        // Enums are stored as readable text ("Human", "Fighter"), not numbers.
+        modelBuilder.Entity<Hero>(hero =>
+        {
+            hero.Property(h => h.Name).HasMaxLength(HeroLimits.MaxNameLength);
+            hero.Property(h => h.Sex).HasConversion<string>();
+            hero.Property(h => h.Race).HasConversion<string>();
+            hero.Property(h => h.Class).HasConversion<string>();
+            hero.Property(h => h.Status).HasConversion<string>();
+
+            // A roster entry may be held by one ACTIVE hero at a time. Terminated
+            // heroes keep their row but are excluded from the index, so the entry
+            // can be reused (this is what fixes the old build's slot-reuse bug).
+            hero.HasIndex(h => h.RosterEntry)
+                .IsUnique()
+                .HasFilter("Terminated = 0");
+        });
+
+        modelBuilder.Entity<PartySlot>(slot =>
+        {
+            // The slot index (0-3) IS the key: there can be at most one hero per
+            // position. We set it ourselves, so the database must not generate it.
+            slot.HasKey(p => p.SlotIndex);
+            slot.Property(p => p.SlotIndex).ValueGeneratedNever();
+
+            // New: the old schema allowed one hero in two positions.
+            slot.HasIndex(p => p.HeroId).IsUnique();
+
+            // Heroes are soft-deleted, so deleting one that is in the party
+            // should be refused rather than silently cascading.
+            slot.HasOne<Hero>()
+                .WithMany()
+                .HasForeignKey(p => p.HeroId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }
