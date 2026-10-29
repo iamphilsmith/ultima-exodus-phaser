@@ -87,6 +87,23 @@ app.MapGet("api/hero-options", () => HeroOptions.GetSnapshot());
 app.MapGet("api/roster", async (RosterService roster) =>
     Results.Ok(await roster.GetRosterAsync()));
 
+app.MapPost("api/roster/create", async (CreateHeroRequest request, RosterService roster) =>
+{
+    // JSON accepts a raw number for an enum, so check the values are real ones.
+    if (!Enum.IsDefined(request.Sex)) return Results.BadRequest($"Unknown sex: {request.Sex}");
+    if (!Enum.IsDefined(request.Race)) return Results.BadRequest($"Unknown race: {request.Race}");
+    if (!Enum.IsDefined(request.Class)) return Results.BadRequest($"Unknown class: {request.Class}");
+
+    var error = CreationRules.Validate(
+        request.Name, request.Strength, request.Dexterity, request.Intelligence, request.Wisdom);
+    if (error != CreationError.None)
+    {
+        return Results.BadRequest($"Invalid hero: {error}");
+    }
+
+    return Results.Ok(await roster.CreateHeroAsync(request));
+});
+
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
     if (!Enum.IsDefined(request.Direction))
