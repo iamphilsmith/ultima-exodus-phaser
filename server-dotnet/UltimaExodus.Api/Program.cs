@@ -114,6 +114,20 @@ app.MapPost("api/roster/terminate", async (TerminateHeroRequest request, RosterS
     return Results.Ok(await roster.TerminateHeroAsync(request.Entry));
 });
 
+app.MapPost("api/party/form", async (FormPartyRequest request, RosterService roster) =>
+{
+    var result = await roster.FormPartyAsync(request.Entries ?? []);
+
+    // A wrong count or out-of-range entry is a malformed request, not a game outcome.
+    return result.Status == FormResult.Invalid
+        ? Results.BadRequest(
+            $"A party needs {HeroLimits.PartySize} roster entries between 1 and {HeroLimits.RosterSize}")
+        : Results.Ok(result);
+});
+
+app.MapPost("api/party/disperse", async (RosterService roster) =>
+    Results.Ok(await roster.DisperseAsync()));
+
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {
     if (!Enum.IsDefined(request.Direction))

@@ -73,4 +73,41 @@ public class RosterService(UltimaExodusDbContext db)
 
         return new TerminateHeroResult(status, await GetRosterAsync());
     }
+
+    public async Task<FormPartyResult> FormPartyAsync(IReadOnlyList<int> entries)
+    {
+        // Active heroes only: a terminated hero's entry counts as empty.
+        var heroes = await db.Heroes
+            .Where(h => !h.Terminated)
+            .ToListAsync();
+        var partyAlreadyFormed = await db.PartySlots.AnyAsync();
+
+        var status = PartyRules.CheckForm(
+            entries,
+            heroes.Select(h => h.RosterEntry).ToList(),
+            partyAlreadyFormed);
+
+        if (status == FormResult.Formed)
+        {
+            for (var position = 0; position < entries.Count; position++)
+            {
+                var hero = heroes.Single(h => h.RosterEntry == entries[position]);
+                db.PartySlots.Add(new PartySlot { SlotIndex = position, HeroId = hero.Id });
+            }
+
+            await db.SaveChangesAsync();   // all four slots, or none
+        }
+
+        return new FormPartyResult(status, await GetRosterAsync());
+    }
+
+    // Always succeeds, even if there was no party (matches the old build).
+    public async Task<RosterSnapshot> DisperseAsync()
+    {
+        var slots = await db.PartySlots.ToListAsync();
+        db.PartySlots.RemoveRange(slots);
+        await db.SaveChangesAsync();
+
+        return await GetRosterAsync();
+    }
 }

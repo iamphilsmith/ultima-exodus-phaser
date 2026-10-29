@@ -118,4 +118,148 @@ public class RosterServiceTests : IDisposable
         Assert.Equal("B", third.Roster.Entries[1].Hero!.Name);
         Assert.Equal(3, db.Heroes.Count());   // A's row is still there, terminated
     }
+
+        private static async Task CreateHeroes(RosterService service, int count)
+    {
+        for (var i = 1; i <= count; i++)
+        {
+            await service.CreateHeroAsync(Request($"H{i}"));
+        }
+    }
+
+    [Fact]
+    public async Task Form_puts_heroes_in_the_order_given()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 5);
+
+        var result = await service.FormPartyAsync([3, 1, 4, 2]);
+
+        Assert.Equal(FormResult.Formed, result.Status);
+        Assert.True(result.Roster.PartyFormed);
+        Assert.Equal(2, result.Roster.Entries[0].PartyPosition);   // entry 1 -> position 2
+        Assert.Equal(4, result.Roster.Entries[1].PartyPosition);   // entry 2 -> position 4
+        Assert.Equal(1, result.Roster.Entries[2].PartyPosition);   // entry 3 -> position 1
+        Assert.Equal(3, result.Roster.Entries[3].PartyPosition);   // entry 4 -> position 3
+        Assert.Null(result.Roster.Entries[4].PartyPosition);       // entry 5 stays out
+    }
+
+    [Fact]
+    public async Task Form_is_refused_when_a_party_already_exists()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 5);
+        await service.FormPartyAsync([1, 2, 3, 4]);
+
+        var result = await service.FormPartyAsync([2, 3, 4, 5]);
+
+        Assert.Equal(FormResult.AlreadyFormed, result.Status);
+        Assert.Equal(1, result.Roster.Entries[0].PartyPosition);   // unchanged
+        Assert.Equal(4, db.PartySlots.Count());
+    }
+
+    [Fact]
+    public async Task Form_with_a_duplicate_entry_saves_nothing()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 4);
+
+        var result = await service.FormPartyAsync([1, 2, 2, 4]);
+
+        Assert.Equal(FormResult.Duplicate, result.Status);
+        Assert.Equal(0, db.PartySlots.Count());
+    }
+
+    [Fact]
+    public async Task Form_with_an_empty_entry_is_refused()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 3);
+
+        var result = await service.FormPartyAsync([1, 2, 3, 4]);
+
+        Assert.Equal(FormResult.EmptyEntry, result.Status);
+        Assert.Equal(0, db.PartySlots.Count());
+    }
+
+    // The old build's bug: a terminated hero could be pulled into a party.
+    [Fact]
+    public async Task Form_treats_a_terminated_heros_entry_as_empty()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 4);
+        await service.TerminateHeroAsync(2);
+
+        var result = await service.FormPartyAsync([1, 2, 3, 4]);
+
+        Assert.Equal(FormResult.EmptyEntry, result.Status);
+        Assert.Equal(0, db.PartySlots.Count());
+    }
+
+    [Fact]
+    public async Task Form_with_the_wrong_shape_is_Invalid()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 4);
+
+        Assert.Equal(FormResult.Invalid, (await service.FormPartyAsync([1, 2, 3])).Status);
+        Assert.Equal(FormResult.Invalid, (await service.FormPartyAsync([1, 2, 3, 21])).Status);
+    }
+
+    [Fact]
+    public async Task Disperse_clears_the_party_but_keeps_the_heroes()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 4);
+        await service.FormPartyAsync([1, 2, 3, 4]);
+
+        var roster = await service.DisperseAsync();
+
+        Assert.False(roster.PartyFormed);
+        Assert.All(roster.Entries.Take(4), e =>
+        {
+            Assert.NotNull(e.Hero);
+            Assert.Null(e.PartyPosition);
+        });
+    }
+
+    [Fact]
+    public async Task Disperse_with_no_party_still_succeeds()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+
+        var roster = await service.DisperseAsync();
+
+        Assert.False(roster.PartyFormed);
+    }
+
+    [Fact]
+    public async Task A_dispersed_hero_can_then_be_terminated_and_a_new_party_formed()
+    {
+        using var db = NewContext();
+        var service = new RosterService(db);
+        await CreateHeroes(service, 5);
+        await service.FormPartyAsync([1, 2, 3, 4]);
+
+        Assert.Equal(TerminateResult.InParty, (await service.TerminateHeroAsync(1)).Status);
+
+        await service.DisperseAsync();
+        Assert.Equal(TerminateResult.Terminated, (await service.TerminateHeroAsync(1)).Status);
+
+        // Entry 1 is free again, so a replacement takes it and a new party can form.
+        await service.CreateHeroAsync(Request("Replacement"));
+        var result = await service.FormPartyAsync([1, 2, 3, 5]);
+
+        Assert.Equal(FormResult.Formed, result.Status);
+        Assert.Equal("Replacement", result.Roster.Entries[0].Hero!.Name);
+        Assert.Equal(1, result.Roster.Entries[0].PartyPosition);
+    }
 }
