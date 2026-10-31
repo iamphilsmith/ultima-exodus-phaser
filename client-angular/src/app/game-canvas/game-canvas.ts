@@ -4,6 +4,9 @@ import { WorldScene } from '../game/world-scene';
 import { MapService } from '../services/map';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import Phaser from 'phaser';
+import { PartyOrganizationScene } from '../game/party-organization-scene';
+import { RosterService } from '../services/roster';
+import { HeroOptionsService } from '../services/hero-options';
 
 @Component({
   selector: 'app-game-canvas',
@@ -18,6 +21,8 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
   private overworld = inject(GameService);
   private mapService = inject(MapService);
   private tileCatalogue = inject(TileCatalogueService);
+  private rosterService = inject(RosterService);
+  private heroOptions = inject(HeroOptionsService);
 
   ngAfterViewInit(): void {
     this.game = new Phaser.Game({
@@ -28,7 +33,10 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
       parent: this.gameContainer.nativeElement,
       backgroundColor: '#000000',
       pixelArt: true,
-      scene: [new WorldScene(this.overworld, this.mapService, this.tileCatalogue)]
+      scene: [
+        new WorldScene(this.overworld, this.mapService, this.tileCatalogue), 
+        new PartyOrganizationScene(this.rosterService, this.heroOptions)
+      ]
     });
   }
 

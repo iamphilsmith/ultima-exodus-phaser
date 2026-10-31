@@ -25,3 +25,11 @@ export const EGA_BLACK = 0x000000;
 // Charset sentinels
 export const CHAR_ARROW_RIGHT = 16;
 export const CHAR_ARROW_LEFT = 17;
+
+export const EGA_GREEN = 0x54fc54;
+export const EGA_RED = 0xfc5454;
+
+/** Left x pixel for text of `length` characters centred on the canvas. */
+export function centredStartX(length: number, scale = 1): number {
+    return Math.floor((CANVAS_W - length * CHAR_W * scale) / 2);
+}

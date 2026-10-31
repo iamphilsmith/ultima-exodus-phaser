@@ -5,6 +5,7 @@ import { MapService } from '../services/map';
 import { OverworldView } from './overworld-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
+import { loadSpritesheetOnce } from './assets';
 
 import Phaser from 'phaser';
 import {
@@ -53,17 +54,16 @@ export class WorldScene extends Phaser.Scene {
 
 
   preload(): void {
-    this.load.spritesheet('chars', 'assets/sprites/charset.png', {
-      frameWidth: 16,
-      frameHeight: 16,
-    });
-    this.load.spritesheet('tiles', 'assets/sprites/shapes.png', {
-      frameWidth: 16,
-      frameHeight: 16,
-    });
+    loadSpritesheetOnce(this, 'chars', 'assets/sprites/charset.png');
+    loadSpritesheetOnce(this, 'tiles', 'assets/sprites/shapes.png');
   }
 
   create(): void {
+    // This scene is restarted when the player returns from party organisation, and a
+    // restart reuses this same object: drop anything left over from last time.
+    this.overworldView = undefined;
+    this.requestInFlight = false;
+
     console.log('chars frameTotal:', this.textures.get('chars').frameTotal);
 
     this.drawBorder();
@@ -77,6 +77,13 @@ export class WorldScene extends Phaser.Scene {
     this.inputService.onMove((direction) => void this.handleMove(direction));
     this.inputService.onInteract(() => void this.handleInteract());
     void this.restoreState();
+
+    // TEMPORARY (Phase 5): the way into party organisation until the Phase 6 main
+    // menu exists. Removed in Phase 6.
+    this.input.keyboard?.on('keydown-O', this.openPartyOrganization);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown-O', this.openPartyOrganization);
+    });
   }
 
   override update(): void {
@@ -116,6 +123,12 @@ export class WorldScene extends Phaser.Scene {
   private handleInteract(): Promise<void> {
     return this.request(() => this.gameService.interact(), 'Interact failed:');
   }
+
+  // TEMPORARY (Phase 5), see create().
+  private openPartyOrganization = (): void => {
+    if (this.requestInFlight) return;   // never leave mid-request
+    this.scene.start('organize-party', { exitTo: 'world' });
+  };
 
   /** Put a snapshot on screen: the viewport with fog, and the log panel. */
   private async applySnapshot(snapshot: GameStateSnapshot): Promise<void> {
