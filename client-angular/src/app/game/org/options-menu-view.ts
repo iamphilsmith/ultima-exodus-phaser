@@ -3,6 +3,7 @@ import { OrgContext, OrgView } from './org-view';
 import { RegisterView } from './register-view';
 import { writeTextCentered } from '../bitmap-text';
 import { EGA_CYAN, EGA_GREEN, EGA_RED, EGA_WHITE } from '../shell-layout';
+import { CreateCharacterView } from './create-character-view';
 
 const STATUS_Y = 150;
 
@@ -30,6 +31,7 @@ export class OptionsMenuView implements OrgView {
 
         const keyboard = scene.input.keyboard;
         keyboard?.on('keydown-E', this.handleExamine);
+        keyboard?.on('keydown-C', this.handleCreate);
         keyboard?.on('keydown-D', this.handleDisperse);
         keyboard?.on('keydown-M', this.handleMainMenu);
     }
@@ -38,6 +40,7 @@ export class OptionsMenuView implements OrgView {
         this.closed = true;
         const keyboard = this.context?.scene.input.keyboard;
         keyboard?.off('keydown-E', this.handleExamine);
+        keyboard?.off('keydown-C', this.handleCreate);
         keyboard?.off('keydown-D', this.handleDisperse);
         keyboard?.off('keydown-M', this.handleMainMenu);
 
@@ -47,6 +50,7 @@ export class OptionsMenuView implements OrgView {
     }
 
     private handleExamine = (): void => this.context?.switchView(new RegisterView());
+    private handleCreate = (): void => this.context?.switchView(new CreateCharacterView());
 
     private handleDisperse = async (): Promise<void> => {
         const context = this.context;
