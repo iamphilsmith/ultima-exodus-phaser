@@ -9,6 +9,8 @@ export interface OrgContext {
     heroOptions: HeroOptionsService;
     /** Leave party organisation (back to wherever the scene was opened from). */
     exit: () => void;
+    /** Return to the options menu. */
+    showMenu: () => void;
     /** Replace the current screen with another. */
     switchView: (view: OrgView) => void;
 }

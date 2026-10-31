@@ -50,6 +50,7 @@ export class PartyOrganizationScene extends Phaser.Scene {
       roster: this.rosterService,
       heroOptions: this.heroOptions,
       exit: () => this.scene.start(this.exitTo),
+      showMenu: () => this.switchView(new OptionsMenuView()),
       switchView: this.switchView,
     });
   };

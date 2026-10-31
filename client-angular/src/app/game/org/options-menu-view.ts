@@ -1,11 +1,16 @@
 import Phaser from 'phaser';
 import { OrgContext, OrgView } from './org-view';
+import { RegisterView } from './register-view';
 import { writeTextCentered } from '../bitmap-text';
 import { EGA_CYAN, EGA_GREEN, EGA_RED, EGA_WHITE } from '../shell-layout';
+
+const STATUS_Y = 150;
 
 export class OptionsMenuView implements OrgView {
     private context?: OrgContext;
     private images: Phaser.GameObjects.Image[] = [];
+    private statusImages: Phaser.GameObjects.Image[] = [];
+    private closed = false;
 
     load(context: OrgContext): void {
         this.context = context;
@@ -23,14 +28,47 @@ export class OptionsMenuView implements OrgView {
             ...writeTextCentered(scene, 'Main  menu', 122, EGA_WHITE),
         );
 
-        scene.input.keyboard?.on('keydown-M', this.handleMainMenu);
+        const keyboard = scene.input.keyboard;
+        keyboard?.on('keydown-E', this.handleExamine);
+        keyboard?.on('keydown-D', this.handleDisperse);
+        keyboard?.on('keydown-M', this.handleMainMenu);
     }
 
     teardown(): void {
-        this.context?.scene.input.keyboard?.off('keydown-M', this.handleMainMenu);
+        this.closed = true;
+        const keyboard = this.context?.scene.input.keyboard;
+        keyboard?.off('keydown-E', this.handleExamine);
+        keyboard?.off('keydown-D', this.handleDisperse);
+        keyboard?.off('keydown-M', this.handleMainMenu);
+
         this.images.forEach(image => image.destroy());
         this.images = [];
+        this.clearStatus();
     }
 
+    private handleExamine = (): void => this.context?.switchView(new RegisterView());
+
+    private handleDisperse = async (): Promise<void> => {
+        const context = this.context;
+        if (!context) return;
+
+        let message = 'Party dispersed';
+        try {
+            await context.roster.disperse();
+        } catch (error) {
+            console.error('Could not disperse the party:', error);
+            message = 'Server unavailable';
+        }
+
+        if (this.closed) return;
+        this.clearStatus();
+        this.statusImages = writeTextCentered(context.scene, message, STATUS_Y, EGA_WHITE);
+    };
+
     private handleMainMenu = (): void => this.context?.exit();
+
+    private clearStatus(): void {
+        this.statusImages.forEach(image => image.destroy());
+        this.statusImages = [];
+    }
 }
