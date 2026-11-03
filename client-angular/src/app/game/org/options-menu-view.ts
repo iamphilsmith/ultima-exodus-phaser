@@ -5,6 +5,7 @@ import { FormPartyView } from './form-party-view';
 import { writeTextCentered } from '../bitmap-text';
 import { EGA_CYAN, EGA_GREEN, EGA_RED, EGA_WHITE } from '../shell-layout';
 import { CreateCharacterView } from './create-character-view';
+import { TerminateCharacterView } from './terminate-character-view';
 
 const STATUS_Y = 150;
 
@@ -36,6 +37,7 @@ export class OptionsMenuView implements OrgView {
         keyboard?.on('keydown-D', this.handleDisperse);
         keyboard?.on('keydown-M', this.handleMainMenu);
         keyboard?.on('keydown-F', this.handleForm); 
+        keyboard?.on('keydown-T', this.handleTerminate);
     }
 
     teardown(): void {
@@ -46,6 +48,7 @@ export class OptionsMenuView implements OrgView {
         keyboard?.off('keydown-D', this.handleDisperse);
         keyboard?.off('keydown-M', this.handleMainMenu);
         keyboard?.off('keydown-F', this.handleForm);
+        keyboard?.off('keydown-T', this.handleTerminate);
 
         this.images.forEach(image => image.destroy());
         this.images = [];
@@ -55,6 +58,7 @@ export class OptionsMenuView implements OrgView {
     private handleExamine = (): void => this.context?.switchView(new RegisterView());
     private handleCreate = (): void => this.context?.switchView(new CreateCharacterView());
     private handleForm = (): void => this.context?.switchView(new FormPartyView()); 
+    private handleTerminate = (): void => this.context?.switchView(new TerminateCharacterView());
 
     private handleDisperse = async (): Promise<void> => {
         const context = this.context;
