@@ -15,6 +15,7 @@ export const CANVAS_H = 192;
 export const PARTY_H = 128;
 export const LOG_Y = PARTY_H + 8;
 export const LOG_ROWS = 7;
+export const PANEL_W_CHARS = 15;
 
 // EGA colours
 export const EGA_CYAN = 0x54fcfc;
