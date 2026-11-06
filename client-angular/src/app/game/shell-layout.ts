@@ -15,6 +15,7 @@ export const CANVAS_H = 192;
 export const PARTY_H = 128;
 export const LOG_Y = PARTY_H + 8;
 export const LOG_ROWS = 7;
+export const PANEL_W_CHARS = 15;
 
 // EGA colours
 export const EGA_CYAN = 0x54fcfc;
@@ -25,3 +26,12 @@ export const EGA_BLACK = 0x000000;
 // Charset sentinels
 export const CHAR_ARROW_RIGHT = 16;
 export const CHAR_ARROW_LEFT = 17;
+
+export const EGA_GREEN = 0x54fc54;
+export const EGA_RED = 0xfc5454;
+export const EGA_BRIGHT_BLUE = 0x5454fc;
+
+/** Left x pixel for text of `length` characters centred on the canvas. */
+export function centredStartX(length: number, scale = 1): number {
+    return Math.floor((CANVAS_W - length * CHAR_W * scale) / 2);
+}

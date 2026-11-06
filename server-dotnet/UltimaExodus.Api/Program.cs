@@ -7,6 +7,7 @@ using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
 using UltimaExodus.Engine.Terrain;
+using UltimaExodus.Engine.Heroes;
 using UltimaExodus.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +22,7 @@ builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
 
 builder.Services.AddSingleton<ActionLog>();
 builder.Services.AddScoped<GameService>();
-
+builder.Services.AddScoped<RosterService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularDev", policy =>
@@ -80,6 +81,52 @@ app.MapGet("api/maps/{category}/{mapId}", (string category, string mapId) =>
 });
 
 app.MapGet("api/tiles", () => TileCatalogue.GetSnapshot());
+
+app.MapGet("api/hero-options", () => HeroOptions.GetSnapshot());
+
+app.MapGet("api/roster", async (RosterService roster) =>
+    Results.Ok(await roster.GetRosterAsync()));
+
+app.MapPost("api/roster/create", async (CreateHeroRequest request, RosterService roster) =>
+{
+    // JSON accepts a raw number for an enum, so check the values are real ones.
+    if (!Enum.IsDefined(request.Sex)) return Results.BadRequest($"Unknown sex: {request.Sex}");
+    if (!Enum.IsDefined(request.Race)) return Results.BadRequest($"Unknown race: {request.Race}");
+    if (!Enum.IsDefined(request.Class)) return Results.BadRequest($"Unknown class: {request.Class}");
+
+    var error = CreationRules.Validate(
+        request.Name, request.Strength, request.Dexterity, request.Intelligence, request.Wisdom);
+    if (error != CreationError.None)
+    {
+        return Results.BadRequest($"Invalid hero: {error}");
+    }
+
+    return Results.Ok(await roster.CreateHeroAsync(request));
+});
+
+app.MapPost("api/roster/terminate", async (TerminateHeroRequest request, RosterService roster) =>
+{
+    if (request.Entry < 1 || request.Entry > HeroLimits.RosterSize)
+    {
+        return Results.BadRequest($"Entry must be between 1 and {HeroLimits.RosterSize}");
+    }
+
+    return Results.Ok(await roster.TerminateHeroAsync(request.Entry));
+});
+
+app.MapPost("api/party/form", async (FormPartyRequest request, RosterService roster) =>
+{
+    var result = await roster.FormPartyAsync(request.Entries ?? []);
+
+    // A wrong count or out-of-range entry is a malformed request, not a game outcome.
+    return result.Status == FormResult.Invalid
+        ? Results.BadRequest(
+            $"A party needs {HeroLimits.PartySize} roster entries between 1 and {HeroLimits.RosterSize}")
+        : Results.Ok(result);
+});
+
+app.MapPost("api/party/disperse", async (RosterService roster) =>
+    Results.Ok(await roster.DisperseAsync()));
 
 app.MapPost("api/move", async (MoveRequest request, GameService game) =>
 {

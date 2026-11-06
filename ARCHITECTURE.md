@@ -4,11 +4,12 @@
 > for a rewrite from the old thick-client (Phaser + tRPC + SQLite) stack to
 > a thin-client / server-authoritative stack, undertaken primarily as a vehicle
 > to learn Angular and C#/.NET. 
-> **Phases 0–4 (scaffolding, static map delivery — see "Map delivery" below —
-> shell rendering, the overworld movement loop, and town/castle movement) are
-> complete** and match what's described here; see "Persistence", "Game
-> endpoints", "Locations" and "Example: full snapshot shape" below. Everything
-> else on this page is not yet built.
+> **Phases 0–5 (scaffolding, static map delivery — see "Map delivery" below —
+> shell rendering, the overworld movement loop, town/castle movement, and party
+> organization) are complete** and match what's described here; see
+> "Persistence", "Game endpoints", "Locations", "Party organization" and
+> "Example: full snapshot shape" below. Everything else on this page is not yet
+> built.
 > See `CONTEXT.md` for full current implementation state and `MIGRATION_PLAN.md`
 > for build sequencing. Sections below are updated as each part is actually built.
 
@@ -90,6 +91,11 @@ There is no distinct error response for a game-legal-but-blocked action (e.g.
 walking into a wall). These are valid actions with an in-fiction outcome
 (unchanged position + a log entry), not application errors, so they return
 the same snapshot shape as any successful action.
+
+The party-organization commands follow the same rule (see "Party organization"):
+a refusal that can happen in play ("roster is full", "that character is in the
+party") is a normal `200` carrying a status, not an error. Only a malformed
+request, which a correct client never sends, is a `400`.
 
 ---
 
@@ -192,6 +198,15 @@ file-backed and does not use the database.
   (the key is never database-generated).
 - Migrations are applied at startup via `Database.Migrate()`. The `.db` file is
   gitignored.
+- `Heroes` and `PartySlots` (Phase 5). `Hero` and `PartySlot` are plain classes in
+  `UltimaExodus.Engine/Heroes/`, because the rules need to see them and Engine
+  cannot reference Data; the DbContext maps them with the fluent API and stores
+  enums as text. A terminated hero is **soft-deleted**: its row stays, with
+  `Terminated` set. A unique index on `Heroes.RosterEntry`, filtered to
+  `Terminated = 0`, lets only one active hero hold an entry while still allowing
+  the entry to be reused. A unique index on `PartySlots.HeroId` keeps a hero from
+  holding two party positions; the slot index (0-3) is the key. The database
+  enforces these as well as the rules, so a bug cannot store a bad state.
 - The **action log is not persisted.** It lives in memory on the server
   (`ActionLog`, a singleton capped at 50 entries), so it survives a page
   refresh but is cleared when the API restarts.
@@ -256,6 +271,52 @@ castles (32,63)) and the enter message.
 - The client draws every tile-based map with the same `OverworldView` viewport.
   For town and castle maps it does not wrap, hides out-of-bounds tiles and draws
   no fog (fog in towns is deferred).
+
+---
+
+## Party organization
+
+**Status: implemented (Phase 5).** The pre-game screens (register, create
+character, form party, disperse, terminate) are driven by their own endpoints.
+Hero and party state is **server-owned**: the client keeps only the menu cursor
+and the half-typed form input, and sends the final payload.
+
+```
+GET  api/hero-options      races, classes, sexes (name + initial) and the limits
+GET  api/roster            RosterSnapshot
+POST api/roster/create     CreateHeroRequest  ->  { status: Created | RosterFull, entry, roster }
+POST api/roster/terminate  { entry }          ->  { status: Terminated | Empty | InParty, roster }
+POST api/party/form        { entries }        ->  { status: Formed | AlreadyFormed | Duplicate | EmptyEntry, roster }
+POST api/party/disperse    (no body)          ->  RosterSnapshot
+```
+
+```csharp
+public record RosterSnapshot(List<RosterEntrySnapshot> Entries, bool PartyFormed);
+public record RosterEntrySnapshot(int Entry, RosterHeroSnapshot? Hero, int? PartyPosition);
+public record RosterHeroSnapshot(string Name, string Initials, int Level);
+```
+
+- **Always 20 entries**, empty ones with a null `Hero`, so a screen draws its rows
+  straight from the list. `Entry` is 1-20 and `PartyPosition` is 1-4, both as the
+  player sees them. `Initials` (`MHF` = male human fighter) is computed on the
+  server (`HeroInitials`).
+- **Every command returns its status and the full updated roster**, the roster
+  endpoints' version of "one call, one full state": no refetch, no diffing.
+- **Rules are pure and live in Engine** (`UltimaExodus.Engine/Heroes/`):
+  `CreationRules.Validate` (name 1-12 characters, each stat 0-25, total exactly
+  50), `Roster.NextFreeEntry`, `Roster.CheckTerminate`, `PartyRules.CheckForm`
+  (checks, in order: party already formed, wrong shape, duplicates, empty
+  entries). `RosterService` loads rows, asks the rules, saves; the roster
+  snapshot is built by the pure `RosterSnapshotBuilder`.
+- **Terminated heroes count as absent** everywhere: not in the roster, not
+  formable into a party, and their entry is free for the next hero. A party
+  member cannot be terminated; disperse first.
+- **`GET api/hero-options`** is the single source for the lists and limits
+  (`{ sexes, races, classes, limits }`), so the client does not keep its own
+  copy. The server still validates everything.
+- **Hero values at creation** come from `HeroDefaults` (100 hit points, 0 magic
+  points, food and gold; level 1; status good). Inventory, equipment and magic
+  points by class are deferred.
 
 ---
 
@@ -349,12 +410,17 @@ public record PartyPosition(string MapId, MapCategory Category, int X, int Y); /
 public record LogEntry(string Text);
 public record WorldClock(int Moon1Phase, int Moon2Phase, string Wind);
 public record PartyStatus(List<PartyMemberStatus> Members);
+public record PartyMemberStatus(int Slot, string Name, string Condition, string Type,
+                                int Magic, int Level, int Hits, int Food);
 ```
 
-**Status: implemented (Phase 3, steps 16 and 21; `Category` added in Phase 4).** Returned in full on every
+**Status: implemented (Phase 3, steps 16 and 21; `Category` added in Phase 4;
+`Party` made real in Phase 5).** Returned in full on every
 action — no diffing on either side. For now: `Clock` is hardcoded to match the
-old static display; `Party` is a hardcoded stub (four members, mirroring the
-HUD) until Phase 5, and its interior shape may change then; `Entities` and
+old static display; `Party` is built from the saved party (the four hero slots),
+one `PartyMemberStatus` per member in party order with `Slot` 1-4, `Type` the
+sex/race/class initials and `Condition` a single letter from the hero's status,
+and is empty until a party is formed; `Entities` and
 `Effects` are always empty until dynamic entities and combat exist. The
 earlier design sketch used a `DungeonPosition` type here; the implemented
 `PartyPosition` (map id, category and tile) covers the overworld, towns and
@@ -413,12 +479,31 @@ castles, and dungeon facing and level will be added when the dungeon phase is bu
   `map.category`.
 - **Castle Exodus entry** stays at (32,63); checked in play.
 
+## Resolved during Phase 5 (party organization)
+
+- **Hero and party state is server-owned.** This settles the old open question
+  about hero/party state ownership: the server holds heroes and the party, the
+  client sends form input once, and the HUD party panel is drawn from the
+  snapshot's `Party`. See "Party organization" and "Persistence".
+- **Screens are Phaser scenes**, not Angular components, consistent with
+  rendering everything inside the canvas. Angular supplies the services,
+  which `GameCanvas` hands to the scene. Each screen is a pure, unit-tested form
+  class (steps, key handling, messages, validation) plus a thin Phaser view.
+- **Validation is plain C# in Engine** (no FluentValidation); the client mirrors
+  only the messages, using limits fetched from `GET api/hero-options`.
+- **`Hero` and `PartySlot` are Engine classes**, mapped by the DbContext (Engine
+  cannot reference Data).
+- **Refusals are `200` with a status; malformed requests are `400`.**
+- **Roster entries are stored 1-20**, not 0-19 as in the old build.
+- **Two old bugs not ported**: terminated heroes joining a party, and reused
+  slots leaving duplicate rows. The filtered unique index makes the second
+  impossible.
+- **Temporary `O` hook** on `WorldScene` until the Phase 6 menu exists; the
+  scene's `exitTo` start parameter is what changes then.
+
 ## Open questions / not yet decided
 
 - Effect-type vocabulary (see Combat section above)
-- Whether hero/party state ownership questions from the old architecture
-  (see `CONTEXT.md`) carry over in modified form once the server is fully
-  authoritative
 - Deployment topology: whether Angular `dist/` will be served by the .NET app
   (same origin, eliminating CORS in production) — deferred but acknowledged
   as an important distinction to settle before cutover

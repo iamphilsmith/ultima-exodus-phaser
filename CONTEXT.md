@@ -29,22 +29,32 @@ server-dotnet/
     Terrain/             — TileProperties, TileCatalogue, TileCatalogueSnapshot
     Maps/                — MapCategory, MapData, MapEntity
     Locations/           — LocationDef, LocationCatalogue (the 12 overworld entrances)
+    Heroes/              — Sex, Race, HeroClass, HeroStatus, Hero, PartySlot, HeroLimits,
+                           HeroDefaults, HeroInitials, HeroOptions, CreationRules, Roster,
+                           PartyRules, RosterSnapshot (+ its builder), and the create /
+                           terminate / form result records
     Movement/            — Direction, DirectionExtensions, MoveResult, OverworldMovement,
                            LocationMoveResult, LocationMovement
     State/               — GameStateSnapshot (+ PartyPosition, LogEntry, WorldClock,
-                           EffectSequence), PartyStatus, StubState, ActionLog
-  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules (movement, catalogue, locations);
-                           references Data too, for the map-backed location tests
+                           EffectSequence), PartyStatus (+ PartyMemberStatus),
+                           PartyStatusBuilder, StubState (clock only), ActionLog
+  UltimaExodus.Engine.Tests/  — xUnit tests for Engine rules (movement, catalogue, locations,
+                           heroes, roster, party); references Data (map-backed location
+                           tests, and in-memory SQLite tests that run the real migrations)
+                           and Api (RosterService tests)
   UltimaExodus.Data/     — data loading; depends on Engine
     Maps/                — TiledMapJson, MapSourceLoader
     MapSources/           — Tiled JSON source files, copied here from assets/maps/
                             (copy-to-output configured in UltimaExodus.Data.csproj)
-    Persistence/         — GameState, UltimaExodusDbContext
-    Migrations/          — EF Core migrations (InitialGameState)
+    Persistence/         — GameState, UltimaExodusDbContext (also maps the Engine's Hero and
+                            PartySlot classes)
+    Migrations/          — EF Core migrations (InitialGameState, AddHeroesAndParty)
   UltimaExodus.Api/      — HTTP endpoints; depends on both Engine and Data
-    Contracts/           — MoveRequest
+    Contracts/           — MoveRequest, CreateHeroRequest, TerminateHeroRequest,
+                           FormPartyRequest
     Configuration/       — DebugOptions (Debug:NoClip, read in Development only)
-    Services/            — GameService (move/interact/state orchestration)
+    Services/            — GameService (move/interact/state orchestration),
+                           RosterService (roster and party commands)
 
 client-angular/
   src/app/
@@ -52,6 +62,8 @@ client-angular/
       map.ts             — MapService, plus MapCategory/MapData TS mirrors of the C# types
       game.ts            — GameService (move/interact/state calls) and the snapshot interfaces
       tile-catalogue.ts  — TileCatalogueService (fetches api/tiles once)
+      roster.ts          — RosterService (one method per roster/party endpoint) and the DTOs
+      hero-options.ts    — HeroOptionsService (fetches api/hero-options once)
     utils/api-base-url.ts — apiBaseUrl(), shared by every service that calls the API
     game-canvas/          — hosts the Phaser instance; injects services and hands them
                             to WorldScene
@@ -63,6 +75,15 @@ client-angular/
       line-of-sight.ts    — canSee(): pure line-of-sight function for fog of war
       input-service.ts, input-direction.ts — keyboard input
       log-rows.ts         — pads the server log into log-panel rows
+      party-rows.ts       — formats a party member into the HUD panel's four rows
+      assets.ts           — loadSpritesheetOnce(): textures are shared by every scene
+      party-organization-scene.ts — the organisation scene; shows one screen at a time
+      org/                — the organisation screens: options menu, Register, Create
+                            Character, Form Party, Terminate Character. Each of the
+                            three forms is a pure, unit-tested *-form.ts (rules and keys)
+                            beside the Phaser *-view.ts that draws it. Also org-view.ts
+                            (OrgView, OrgContext), register-rows.ts, numeric-line-input.ts
+                            and text-line-input.ts
       shell-layout.ts (constants), bitmap-text.ts
 ```
 
@@ -229,6 +250,95 @@ the two baked-in overworld creatures (a sea serpent and a tile-24 monster) are
 now solid; the old debug log of `[x,y]` on E over a plain overworld tile is gone
 (it logs `Nothing here`).
 
+### Phase 5 — Party organization parity ✅ complete
+
+Full step list in `MIGRATION_PLAN.md` (26a-32). Register, Create Character, Form
+Party, Disperse and Terminate work end to end, and the HUD party panel shows the
+real party. The server decides everything; the client draws and collects keys.
+
+- **Schema** — `Hero` and `PartySlot` are plain classes in
+  `UltimaExodus.Engine/Heroes/` (Engine cannot reference Data, and the rules need
+  them); `UltimaExodusDbContext` maps them, enums stored as text. Migration
+  `AddHeroesAndParty`. Two unique indexes do the safety work:
+  `Heroes.RosterEntry` filtered to `Terminated = 0` (a terminated hero keeps its
+  row but frees its entry), and `PartySlots.HeroId` (a hero cannot hold two
+  positions). `PartySlot.SlotIndex` (0-3) is the key. Roster entries are stored
+  1-20, as the player sees them. `heroInventory` and the equipped-item ids were
+  not ported: nothing in the old build used them.
+- **Hero defaults** (`HeroDefaults`): 100 hit points, 0 magic points, 0 food,
+  0 gold, level 1, status good. These are the old database's values, not the
+  original game's 150.
+- **Rules** — pure, in Engine, unit-tested: `CreationRules.Validate` (name 1-12
+  characters, each stat 0-25, total exactly 50), `Roster.NextFreeEntry` (lowest
+  free entry, null when full), `Roster.CheckTerminate`, `PartyRules.CheckForm`
+  (checks in order: party already formed, wrong shape, duplicates, empty
+  entries), `HeroInitials` (`MHF` = male human fighter).
+- **Endpoints** (all in `Program.cs`; commands go through `RosterService`):
+
+  ```
+  GET  api/hero-options      races, classes, sexes (name + initial) and the limits
+  GET  api/roster            RosterSnapshot: 20 entries + partyFormed
+  POST api/roster/create     { name, sex, race, class, strength, dexterity,
+                               intelligence, wisdom }  ->  Created | RosterFull
+  POST api/roster/terminate  { entry }  ->  Terminated | Empty | InParty
+  POST api/party/form        { entries: [a, b, c, d] }  ->  Formed | AlreadyFormed |
+                               Duplicate | EmptyEntry
+  POST api/party/disperse    (no body)  ->  the roster; always succeeds
+  ```
+
+  Each command returns its status plus the full updated `RosterSnapshot` (the
+  roster endpoints' version of "one call, one full state"). A game outcome such
+  as "roster full" is a normal 200 with a status; only malformed input (blank or
+  long name, stats out of range or not totalling 50, unknown race, wrong number
+  of entries, entry outside 1-20) is a 400.
+- **Party in the game snapshot** — `StubState.Party` is gone. `GameService`
+  loads the party slots and heroes for every snapshot and
+  `PartyStatusBuilder` maps them (`Type` = initials, condition letter G/P/S/U/D
+  from the status, `Slot` 1-4). No party means an empty `Members` list.
+- **Client** — `PartyOrganizationScene` (key `organize-party`) is registered
+  beside `WorldScene` in `GameCanvas` and receives `RosterService` and
+  `HeroOptionsService` through its constructor. It shows one `OrgView` at a time;
+  each view gets an `OrgContext` (scene, services, `exit`, `showMenu`,
+  `switchView`). The three forms are split into a pure class (steps, key
+  handling, messages, validation; all unit-tested) and a thin view that draws it
+  and calls the server. Every view adds its key listener only after its first
+  `await`, so the keypress that opened it is not also handled by it, and a
+  `closed` flag stops a late response from drawing onto a screen the player has
+  left. `WorldScene.showParty` redraws the HUD party panel on every snapshot
+  (`partyRows` formats each member).
+- **Temporary entry point** — until the Phase 6 menu exists, `O` on the
+  overworld opens party organisation (`M` returns). The code is marked
+  `TEMPORARY (Phase 5)` in `WorldScene`; the scene's `exitTo` start parameter is
+  what Phase 6 changes to `main-menu`.
+- **Check script** — `scripts/party-check.ps1` runs the whole lifecycle through
+  the API against an empty database (stop the API, delete
+  `UltimaExodus.Api/ultima-exodus.db*`, start it again): create, form in a chosen
+  order, the refusals while a party exists, disperse, the 400s, terminate, slot
+  reuse, and a terminated hero counting as an empty entry. It prints
+  `ALL PASSED` or the failing checks. Re-run `parity-check.ps1` afterwards, since
+  `GameService` builds every snapshot.
+
+Findings from reading the old stack:
+
+- `party.form` selected heroes by roster slot without excluding terminated ones,
+  and `hero.create` reused a terminated hero's slot, so the same slot could hold
+  two rows. Forming a party could then fail spuriously or pull a terminated hero
+  into the party. Not ported; see the schema notes above.
+- The old party-form messages and the Register's row layout are matched exactly,
+  but the old build's longest messages were wider than the screen: the canvas is
+  320 pixels, 40 characters, and only 38 fit between the borders. Some of the old
+  text also contained an em dash, which the charset cannot draw (it has 128
+  glyphs).
+- The old HUD party panel was hardcoded in `WorldScene`; the "real data" it
+  needed was always planned for this phase.
+
+Known differences from the old build: the two bug fixes; the HUD shows the real
+party (blank when none exists); em dashes became hyphens and the longest
+messages wrap onto two lines; leaving the "roster full" and "party already
+formed" screens returns to the options menu rather than the main menu; keys are
+ignored while a request is in flight; a failed request shows a message instead of
+silence.
+
 ### Environment / tooling notes specific to the new stack
 
 - **Angular 22 introduced a genuine `@Service()` decorator**, replacing
@@ -253,7 +363,7 @@ now solid; the old debug log of `[x,y]` on E over a plain overworld tile is gone
   working directory, so run the API from inside `UltimaExodus.Api/`
   (`cd server-dotnet/UltimaExodus.Api && dotnet run`).
 
-### Gotchas hit during Phase 0-3
+### Gotchas hit during Phase 0-5
 
 - **Newly created files may not be visible to the compiler until staged in git** —
   likely an editor-flush timing issue, not a real dotnet/git interaction. Running
@@ -315,7 +425,8 @@ now solid; the old debug log of `[x,y]` on E over a plain overworld tile is gone
   `update()` since the base class declares it.
 - **A global `JsonStringEnumConverter` would change `MapData.category` from a
   number to a string**, silently breaking the client's numeric `MapCategory`
-  enum. The converter is applied to the `Direction` enum only.
+  enum. The converter is applied per enum with an attribute (`Direction`, and
+  from Phase 5 the hero and result enums), never globally.
 - **Overlapping move requests race on the server** (both read the same saved
   row). The scene allows one request in flight (`requestInFlight`), also used
   while restoring state on load.
@@ -334,6 +445,50 @@ now solid; the old debug log of `[x,y]` on E over a plain overworld tile is gone
   `Enumerable.Range` takes a count, not an end value (37-57 is `Range(37, 21)`).
 - **`Debug:NoClip` is read once at startup** (and only bound in Development), so
   editing it or the launch profile needs an API restart.
+- **A minimal API handler parameter whose type is not registered is treated as
+  the request body.** A GET that takes an unregistered `RosterService` fails with
+  `Body was inferred but the method does not allow inferred body parameters`.
+  The fix is `builder.Services.AddScoped<RosterService>()`.
+- **A stale API process hides your changes and locks the database.** A route you
+  just added returns 404 if an older `dotnet run` is still serving, and on
+  Windows `ultima-exodus.db`, `-wal` and `-shm` cannot be deleted while the API
+  runs. Stop the API (Ctrl+C, or `Get-Process UltimaExodus.Api | Stop-Process`)
+  before deleting the database to reset it.
+- **Entities the Engine's rules need live in Engine, not Data.** `Hero` and
+  `PartySlot` are plain classes in Engine; the DbContext maps them with the
+  fluent API (no EF attributes). A separate persistence entity plus mapping would
+  be more code than a single-player game needs.
+- **Soft delete and uniqueness**: `HasIndex(h => h.RosterEntry).IsUnique()
+  .HasFilter("Terminated = 0")` lets a terminated hero keep its row while its
+  entry is reused. Always filter `!Terminated` in queries too.
+- **In-memory SQLite tests need one open connection for their whole life**
+  (`new SqliteConnection("Data Source=:memory:")`, `Open()` in the constructor),
+  because the database disappears when the last connection closes. Calling
+  `Database.Migrate()` on it tests the real migration and constraints.
+- **A restarted Phaser scene is the same object.** Fields keep their old values
+  and point at destroyed game objects, so `WorldScene.create()` resets
+  `overworldView`, `requestInFlight` and `partyObjects`. Textures are shared by
+  the whole game, so scenes load them through `loadSpritesheetOnce`.
+- **Add a view's key listener after its first `await`**, not synchronously. The
+  keypress that opened a screen can otherwise also be handled by it (an `E` that
+  opens the Register would close it, a `C` would be typed into the name).
+  Remove listeners in `teardown()` and make it safe to call twice.
+- **The charset has 128 glyphs and the screen fits 38 characters between its
+  borders.** Non-ASCII characters (an em dash) draw as the wrong glyph, and a
+  longer line runs off the screen. The forms' specs assert every message is at
+  most 38 characters.
+- **TypeScript class fields initialise before constructor parameter
+  properties** (with `useDefineForClassFields`), so a field initialiser that
+  reads `this.rosterService` sees `undefined`. `PartyOrganizationScene` builds
+  each view's `OrgContext` inside `switchView`, not as a field.
+- **A form's `handleKey` must ignore keys while a request is in flight**,
+  otherwise a second Y or Enter sends a second request.
+- **PowerShell**: `curl` is an alias for `Invoke-WebRequest`; use
+  `Invoke-RestMethod` for JSON. To read a 4xx response add
+  `-SkipHttpErrorCheck` (PowerShell 7+). `Where-Object hero` keeps objects whose
+  `hero` property is not null.
+- **Test commands that exit**: `npm test -- --watch=false` (the plain `ng test`
+  keeps watching); `dotnet test` from `server-dotnet/`.
 
 ---
 

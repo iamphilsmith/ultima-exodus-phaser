@@ -11,6 +11,8 @@
 > number from Phase 2 onward, it may be off by 3 versus the numbering here.
 > Phase 3 adds a sub-step, 19a, rather than renumbering. Phase 4 does the same
 > with lettered sub-steps (23a-23h, 24a-24d); steps 25 onward keep their numbers.
+> Phase 5 does it too (26a-26b, 27a-27f, 28a-28c, 31a); steps 29, 30, 31 and 32
+> keep theirs.
 
 ---
 
@@ -341,22 +343,173 @@ and returns to the overworld; a blocked move logs `<Dir> BLK`; E inside logs
 
 ---
 
-## Phase 5 — Party organization parity
+## Phase 5 — Party organization parity ✅ complete
 
-26. **Add hero/roster persistence entities** — port `heroes`,
-    `heroInventory`, `partySlots` schema into EF Core; port the 50-point
-    stat-total validation rule (creation only, not leveling) to
-    FluentValidation or DataAnnotations.
-27. **Add party organization API endpoints** — register/list, create
-    character, terminate (soft-delete), form/disperse party.
-28. **Port Register screen to Angular.**
-29. **Port Create Character screen to Angular** — including stat allocation
-    and the 50-point validation.
-30. **Port Form Party screen to Angular.**
-31. **Port Terminate Character screen to Angular** — soft-delete only, same
-    as before.
-32. **Confirm party organization parity** — every sub-screen matches the old
-    `PartyOrganizationScene` behaviour. Fix-only commit if needed.
+Goal: the pre-game party management screens (Register, Create Character, Form
+Party, Disperse, Terminate) work end to end against the C# server, and the HUD
+party panel shows the real party instead of the hardcoded stub.
+
+> **Revised from the original plan.** Decisions made while scoping and building
+> this phase (branch `phase-5-party-organisation`, from `main`):
+> - **Screens are Phaser scenes, not Angular components.** The old
+>   `PartyOrganizationScene` and its `OrgView` sub-screens are ported with the
+>   same pattern, drawn with the bitmap charset, consistent with "everything is
+>   rendered inside the canvas". Angular supplies only services
+>   (`RosterService`, `HeroOptionsService`), which `GameCanvas` passes to the
+>   scene through its constructor, as it does for `WorldScene`.
+> - **Validation is plain C# in `UltimaExodus.Engine`** (`CreationRules`), unit
+>   tested, with no FluentValidation dependency. The server stays authoritative;
+>   the client validates only to give the same immediate messages as the old build.
+> - **`Hero` and `PartySlot` are plain classes in Engine** (no EF attributes).
+>   Engine cannot reference Data, and the rules need to see heroes. Mapping is
+>   configured with the fluent API in `UltimaExodusDbContext`.
+> - **Starting values keep the old database values:** hit points 100, magic
+>   points 0, food 0, gold 0, experience 0, level 1, status good. They live as
+>   constants in one place (`HeroDefaults`), so changing them later is one edit.
+>   (The original game starts with 150 hit points, food and gold; if that is
+>   wanted later, it is a change to `HeroDefaults` only.)
+> - **Schema:** `Heroes` and `PartySlots` are ported. `PartySlots` keeps its
+>   shape (slot index 0-3 as the key) but gets a **unique index on `HeroId`**,
+>   which the old schema lacked. `Heroes.RosterEntry` gets a **unique index
+>   filtered to `Terminated = 0`**. `heroInventory`, `equippedWeaponId` and
+>   `equippedArmorId` are deferred: nothing in the old build reads or writes them.
+> - **Roster entries are stored 1-20**, as the player sees them. The old build
+>   stored 0-19 and added 1 for display, a mismatch that invites off-by-one
+>   bugs. The field is `RosterEntry`.
+> - **Two old bugs are not ported.** `party.form` looked heroes up by roster
+>   slot without excluding terminated ones, so a terminated hero could join a
+>   party, or a reused slot made forming fail. Every query here excludes
+>   terminated heroes, and the filtered index makes the bad state impossible.
+> - **Game outcomes are not errors.** "Roster is full", "slot already empty",
+>   "can not terminate a character in the party", "a party is already formed"
+>   and "each position must be different" return 200 with a status. Only
+>   malformed input (blank name, stats not totalling 50, unknown race, a wrong
+>   count or out-of-range entry) returns 400. Every command returns the full
+>   updated `RosterSnapshot`, so the client never refetches.
+> - **Option lists come from the server.** `GET api/hero-options` returns races,
+>   classes, sexes and the creation limits, so the client does not duplicate
+>   them (same reasoning as `api/tiles`). Initials such as `MHF` (sex, race,
+>   class) are computed server-side.
+> - **Temporary entry point.** The new client has no main menu until Phase 6, so
+>   an `O` key hook on `WorldScene` starts the organisation scene. The scene
+>   takes an `exitTo` scene key (default `world`); Phase 6 changes it to
+>   `main-menu` and deletes the hook.
+> - **No party formed:** the HUD party panel is blank and the world is still
+>   walkable. Requiring a party before play is Phase 6's R/O/J gating.
+> - **Out of scope:** magic points by class (still 0, as in the old TODO),
+>   race/class restrictions on stats, inventory and equipment, and the
+>   Ultima III BCD roster files.
+
+**Behaviour matched (old `PartyOrganizationScene` and `hero`/`party` routers):**
+
+- Roster of 20 entries, shown 1-based; created heroes take the lowest free
+  entry.
+- Creation: name 1-12 characters, sex, race (Human, Elf, Dwarf, Bobbit, Fuzzy)
+  and class (Fighter, Paladin, Barbarian, Thief, Cleric, Wizard, Druid,
+  Illusionist, Alchemist) chosen with left/right; four stats (strength,
+  dexterity, intelligence, wisdom) each 0-25 that must total exactly 50. A wrong
+  total shows `Total must be 50 (currently N)`, clears the stats and restarts at
+  strength.
+- Form: four distinct, non-empty entries, only when no party exists. Messages:
+  `Must be 01-20`, `Already selected`, `A party is already formed`,
+  `Each roster position must be different`, `One or more roster positions are
+  empty`, `Party formed - press any key`.
+- Disperse always succeeds and shows `Party dispersed`.
+- Terminate is a soft delete: `Register slot is already empty`,
+  `Can not terminate a character in the party`, `NN Terminated`.
+- Register rows: `NN P NAME(12) INI  Lnn`, red for party members with their
+  position number, bright blue otherwise, `-- Empty --` for free entries.
+
+**Intended differences from the old build:**
+
+- The two bug fixes above.
+- The HUD party panel shows the real party (blank when there is none).
+- Wording and layout fixes forced by the screen: the charset has only 128
+  glyphs, so the old messages' em dash (`—`) is a hyphen, and only 38
+  characters fit between the borders, so `Total must be 50 (currently N)` /
+  `Re-enter stats`, `Creation failed` / `Check stats and try again` and
+  `Can not terminate a character` / `in the party` are split over two lines.
+- Leaving the "roster is full" and "a party is already formed" screens returns
+  to the options menu; the old build left party organisation altogether.
+- Keys are ignored while a request is in flight (the old Create screen could
+  create a hero twice if Y was pressed twice).
+- A failed request shows `Server unavailable` / `Failed to ...` instead of
+  doing nothing.
+
+**Server**
+
+26a. ✅ **Add the hero domain to `UltimaExodus.Engine/Heroes/`** — `Sex`, `Race`,
+    `HeroClass`, `HeroStatus` (string enums, converter on the enum); `Hero`
+    and `PartySlot`; `HeroLimits` (name 12, stats 0-25, total 50, roster 20,
+    party 4) and `HeroDefaults`; and the pure rules `CreationRules.Validate`,
+    `Roster.NextFreeEntry`, `Roster.CheckTerminate` and `PartyRules.CheckForm`
+    (checks, in order: party already formed, wrong shape, duplicates, empty
+    entries). xUnit tests at both ends of every range and just outside them.
+26b. ✅ **Persist heroes and the party** — `DbSet<Hero>` and `DbSet<PartySlot>`,
+    enums stored as text, the two unique indexes above. Migration
+    `AddHeroesAndParty`. Tests run the real migration against in-memory SQLite
+    and check each constraint (shared entry rejected, terminated entry reusable,
+    one hero in two party slots rejected, party slot must reference a real hero).
+27a. ✅ **`GET api/hero-options`** — `HeroInitials` and `HeroOptions` (races,
+    classes, sexes, limits). A test fails if an enum value is added without an
+    initial.
+27b. ✅ **`GET api/roster`** — `RosterSnapshot`: always 20 entries, each with its
+    hero (name, initials, level) and party position (1-4) or empty, plus a
+    `PartyFormed` flag. Built by the pure `RosterSnapshotBuilder`; `RosterService`
+    (`UltimaExodus.Api/Services/`, registered scoped) only loads the rows.
+27c. ✅ **`POST api/roster/create`** — statuses `Created`, `RosterFull`; 400 for
+    invalid input.
+27d. ✅ **`POST api/roster/terminate`** — `{ "entry": 1-20 }`; statuses
+    `Terminated`, `Empty`, `InParty`. `RosterService` tests run against
+    in-memory SQLite, including the old slot-reuse bug.
+27e. ✅ **`POST api/party/form` and `POST api/party/disperse`** — form takes
+    `{ "entries": [n, n, n, n] }` in party order; statuses `Formed`,
+    `AlreadyFormed`, `Duplicate`, `EmptyEntry`; a malformed request is a 400.
+    The four party slots are saved in one `SaveChanges`.
+27f. ✅ **Real party in the game snapshot** — `StubState.Party` removed (the clock
+    stub stays). `PartyStatusBuilder` (`Engine/State/`) maps heroes onto
+    `PartyMemberStatus` (`Type` = sex/race/class initials, condition letter
+    G/P/S/U/D from the status). `GameService` loads the party for every
+    snapshot, so building the snapshot became async. An empty party gives an
+    empty `Members` list. `scripts/party-check.ps1` drives the whole lifecycle
+    through the API from an empty database.
+
+**Client**
+
+28a. ✅ **Services and DTOs** — `RosterService` and `HeroOptionsService`
+    (`@Service()`, `inject()`) with TypeScript mirrors of the DTOs and status
+    unions. A 400 rejects the promise; the calling screen decides what to show.
+28b. ✅ **Scene infrastructure** — `PartyOrganizationScene` (key `organize-party`,
+    started with `{ exitTo }`), the `OrgView` / `OrgContext` interfaces,
+    `writeTextCentered` (with the pure `centredStartX`), `NumericLineInput` and
+    `TextLineInput`, `loadSpritesheetOnce` so any scene can start first, the
+    scene registered in `GameCanvas`, the temporary `O` hook on `WorldScene`,
+    and `WorldScene.create()` resetting its leftover fields (a restart reuses the
+    same scene object).
+28c. ✅ **Options menu and Register screen** — `OptionsMenuView`, `RegisterView`,
+    and the pure `registerRow` formatter. Disperse (`D`) is wired in the menu.
+    `showMenu()` was added to `OrgContext` so screens do not import each other.
+29. ✅ **Create Character screen** — the rules and key handling are the pure,
+    unit-tested `CreateCharacterForm`; `CreateCharacterView` draws it and calls
+    the server. Lists and limits come from `HeroOptionsService`.
+30. ✅ **Form Party screen** — pure `FormPartyForm` plus `FormPartyView`; reads
+    `partyFormed` from the roster on load.
+31. ✅ **Terminate Character screen** — pure `TerminateCharacterForm` plus
+    `TerminateCharacterView`, soft delete only.
+31a. ✅ **Party panel from the snapshot** — the pure, unit-tested `partyRows`
+    formats a member into the panel's four rows, and `WorldScene.showParty`
+    redraws the panel on every snapshot (fewer than four members is fine).
+
+**Close-out**
+
+32. ✅ **Confirm party organization parity** — `scripts/party-check.ps1` runs the
+    whole lifecycle against the API from an empty database (create, form in a
+    chosen order, refusals while a party exists, disperse, terminate, slot reuse
+    and the terminated-hero cases) and checks the statuses and the snapshot's
+    party. Browser checks, step by step: every screen's layout, colours and
+    messages; the 20-entry limit and the four-distinct rule; refusing to
+    terminate a party member; that a refresh keeps the roster and party; and that
+    the HUD matches the formed party. Then this docs commit.
 
 ---
 
@@ -365,7 +518,10 @@ and returns to the overworld; a blocked move logs `<Dir> BLK`; E inside logs
 33. **Port intro + main menu screens to Angular** — R/O/J gating, and the
     rule that the first access in a session always routes to the intro
     screen (per `ARCHITECTURE.md`'s session model — this is enforced
-    client-side, no server call needed).
+    client-side, no server call needed). Also: delete the temporary `O` hook in
+    `WorldScene` (search for `TEMPORARY (Phase 5)`) and start the organisation
+    scene from the menu with `exitTo: 'main-menu'`. The gating can read
+    `partyFormed` from `GET api/roster`.
 
 ---
 
@@ -420,4 +576,11 @@ committed and confirmed:
   the yellow barred doors (tile 32, solid for now)
 - Interacting with chests, NPCs and signs (chests are walkable, creature and sign
   tiles solid, as placeholders)
+- Hero inventory and equipment (`heroInventory`, equipped weapon and armour ids),
+  magic points by class (still 0 for every hero), and race/class restrictions on
+  the starting stats
+- Saving hero changes made during play (damage, food, gold, experience) until
+  combat, shops and a world clock exist; heroes are created and listed only
+- Starting hit points, food and gold (100 / 0 / 0, as the old database had them;
+  the original game uses 150) — a change to `HeroDefaults` when wanted
 - Revisiting solidity of the creature tiles baked into conflict maps (Phase 7: units move)
