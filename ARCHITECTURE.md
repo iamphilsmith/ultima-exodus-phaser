@@ -83,7 +83,9 @@ not a concern worth designing around.
 
 Single-player, local-first. No login. Game state is available whenever the
 app is started; the only fixed rule is that the first access in a session
-always routes to the intro screen.
+always routes to the intro screen. 
+Implemented in Phase 6 entirely on the client: `IntroScene` is the first scene
+registered, so a page load always starts there.
 
 ### Failed / rejected actions
 
@@ -498,8 +500,18 @@ castles, and dungeon facing and level will be added when the dungeon phase is bu
 - **Two old bugs not ported**: terminated heroes joining a party, and reused
   slots leaving duplicate rows. The filtered unique index makes the second
   impossible.
-- **Temporary `O` hook** on `WorldScene` until the Phase 6 menu exists; the
-  scene's `exitTo` start parameter is what changes then.
+- **Temporary `O` hook** on `WorldScene`, removed in Phase 6 when the main menu
+  took over; the scene's `exitTo` default is now `main-menu`.
+
+## Resolved during Phase 6 (main menu / intro)
+
+- **Screens are Phaser scenes**, as in Phase 5; Angular supplies `MapService` and
+  `RosterService`.
+- **Intro on every page load**, by scene order; no server involvement. A refresh
+  mid-game returns to the intro, to revisit when a conflict can be in progress.
+- **Journey Onward is gated on `partyFormed`**, read from `GET api/roster` when
+  the key is pressed. `R` and `O` are never gated.
+- **No server changes** in this phase.
 
 ## Open questions / not yet decided
 

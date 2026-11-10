@@ -13,6 +13,7 @@
 > with lettered sub-steps (23a-23h, 24a-24d); steps 25 onward keep their numbers.
 > Phase 5 does it too (26a-26b, 27a-27f, 28a-28c, 31a); steps 29, 30, 31 and 32
 > keep theirs.
+> Phase 6 does it too (33a-33g); steps 34 onward keep their numbers.
 
 ---
 
@@ -513,16 +514,71 @@ party panel shows the real party instead of the hardcoded stub.
 
 ---
 
-## Phase 6 — Main menu / intro parity
+## Phase 6 — Main menu / intro parity ✅ complete
 
-33. **Port intro + main menu screens to Angular** — R/O/J gating, and the
-    rule that the first access in a session always routes to the intro
-    screen (per `ARCHITECTURE.md`'s session model — this is enforced
-    client-side, no server call needed). Also: delete the temporary `O` hook in
-    `WorldScene` (search for `TEMPORARY (Phase 5)`) and start the organisation
-    scene from the menu with `exitTo: 'main-menu'`. The gating can read
-    `partyFormed` from `GET api/roster`.
+Goal: the game opens on the intro screen and the main menu (Return to the View /
+Organize a Party / Journey Onward), and party organisation and the world are
+reached from the menu instead of the temporary `O` hook.
 
+> **Revised from the original plan.** Decisions made while scoping and building
+> this phase (branch `phase-6-main-menu-intro`, from `main` after the Phase 5
+> merge):
+> - **Screens are Phaser scenes, not Angular components**, as in Phase 5. The
+>   original step said "port to Angular"; Angular supplies only services
+>   (`MapService` to `IntroScene`, `RosterService` to `MainMenuScene`), passed
+>   through the constructors by `GameCanvas`.
+> - **"First access in a session" means a page load.** `IntroScene` is the first
+>   scene in `GameCanvas`'s list, so every load, including a refresh, starts
+>   there. No server call and no `sessionStorage`. A refresh mid-game therefore
+>   returns to the intro; revisit when a conflict can be in progress.
+> - **Only Journey Onward is gated.** With no party formed, `J` shows a red
+>   `Form a party first` on the menu and stays put. `R` and `O` always work. The
+>   old build had no gating (`J` always entered the world).
+> - **The party is checked when `J` is pressed**, not when the menu opens: the
+>   menu is revisited after organisation changes the party, and the scene
+>   object is reused.
+> - **The intro map comes from the server** (`world-intro` is already in
+>   `MapSources`; `GET api/maps/world/world-intro` is 19x6) and is drawn as plain
+>   images, not a Tiled tilemap. Tile values are already 0-based frames.
+> - **Client only:** no new endpoints, no schema change.
+> - **Out of scope:** an in-game way back to the menu. Once in the world, the
+>   only way out is a refresh (as in the old build).
+
+**Behaviour matched (old `IntroScene`, `IntroView` and `MainMenuScene`):**
+
+- Intro: blue frame with a divider at y=80, `EXODUS` in white at 5x scale at
+  y=12, the 19x6 map strip at (8, 88), cyan `◄PRESS  <SPACE>►` on the bottom
+  border. SPACE goes to the menu.
+- Menu: black background, `EXODUS` at 3x scale, two cyan tagline lines,
+  `Option:` with its glyph, then the three cyan options, then the two white
+  copyright lines. `R` returns to the intro, `O` opens party organisation, `J`
+  enters the world.
+
+**Steps**
+
+33a. ✅ **Check the intro map endpoint** — `world-intro` served as category 0,
+     19x6, 114 tiles. No change needed.
+33b. ✅ **Menu logic** — `menu/main-menu-actions.ts`: `menuOutcome(key,
+     partyFormed)` and the refusal message, pure and unit-tested.
+33c. ✅ **`IntroScene`** — frame, title, map strip and SPACE. A failed map load
+     is logged and SPACE still works.
+33d. ✅ **`MainMenuScene`** — layout above, red message at y=140, an in-flight
+     guard, state reset in `init()`, and `Server unavailable` when the roster
+     request fails.
+33e. ✅ **Wire the scenes** — `GameCanvas` order is intro, main-menu, world,
+     organize-party. The `TEMPORARY (Phase 5)` `O` hook and its
+     `openPartyOrganization` method are gone from `WorldScene`, along with a
+     leftover debug `console.log`. Organisation's default `exitTo` is now
+     `main-menu`, and the menu also passes it explicitly.
+33f. ✅ **Confirm menu parity** — `parity-check.ps1` and `party-check.ps1` pass.
+     Browser checks: intro and menu layouts against the old build; SPACE, `R`,
+     `O` then `M`; `J` with and without a party; `J` with the API stopped; rapid
+     key presses; `O` does nothing in the world.
+33g. ✅ **Docs commit.**
+
+Known differences from the old build: `J` is refused when no party is formed;
+`Server unavailable` is shown if the roster request fails; the intro map loads
+from the server.
 ---
 
 ## Phase 7 — Conflict view stub parity

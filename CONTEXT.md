@@ -78,6 +78,9 @@ client-angular/
       party-rows.ts       — formats a party member into the HUD panel's four rows
       assets.ts           — loadSpritesheetOnce(): textures are shared by every scene
       party-organization-scene.ts — the organisation scene; shows one screen at a time
+      intro-scene.ts      — IntroScene: title, map strip, SPACE to the menu (first scene)
+      main-menu-scene.ts  — MainMenuScene: R/O/J, with the party check on J
+      menu/               — main-menu-actions.ts: pure key-to-outcome logic, unit-tested
       org/                — the organisation screens: options menu, Register, Create
                             Character, Form Party, Terminate Character. Each of the
                             three forms is a pure, unit-tested *-form.ts (rules and keys)
@@ -306,10 +309,9 @@ real party. The server decides everything; the client draws and collects keys.
   `closed` flag stops a late response from drawing onto a screen the player has
   left. `WorldScene.showParty` redraws the HUD party panel on every snapshot
   (`partyRows` formats each member).
-- **Temporary entry point** — until the Phase 6 menu exists, `O` on the
-  overworld opens party organisation (`M` returns). The code is marked
-  `TEMPORARY (Phase 5)` in `WorldScene`; the scene's `exitTo` start parameter is
-  what Phase 6 changes to `main-menu`.
+- **Entry point** — Phase 5 reached organisation through a temporary `O` hook on the
+  overworld; Phase 6 removed it. The scene's `exitTo` start parameter now defaults
+  to `main-menu`.
 - **Check script** — `scripts/party-check.ps1` runs the whole lifecycle through
   the API against an empty database (stop the API, delete
   `UltimaExodus.Api/ultima-exodus.db*`, start it again): create, form in a chosen
@@ -338,6 +340,36 @@ messages wrap onto two lines; leaving the "roster full" and "party already
 formed" screens returns to the options menu rather than the main menu; keys are
 ignored while a request is in flight; a failed request shows a message instead of
 silence.
+
+### Phase 6 — Main menu / intro parity ✅ complete
+
+Full step list in `MIGRATION_PLAN.md` (33a-33g). The app opens on the intro, SPACE
+leads to the main menu, and organisation and the world are reached from there.
+Client only; no server changes.
+
+- **Scene order** — `GameCanvas` registers `IntroScene` (`intro`), `MainMenuScene`
+  (`main-menu`), `WorldScene` (`world`) and `PartyOrganizationScene`
+  (`organize-party`). Phaser starts the first, so every page load, including a
+  refresh, begins at the intro.
+- **Intro** — a blue frame with a divider at y=80, the title, and the 19x6
+  `world-intro` map from `GET api/maps/world/world-intro`, drawn as images (tile
+  values are already 0-based frames). SPACE is listened for only after the map
+  attempt, and even if it failed.
+- **Menu** — `R` starts `intro`, `O` starts `organize-party` with
+  `exitTo: 'main-menu'`, `J` starts `world`. The decision is `menuOutcome(key,
+  partyFormed)` in `menu/main-menu-actions.ts` (pure, unit-tested). `J` asks
+  `GET api/roster` for `partyFormed` at the moment it is pressed; with no party
+  it shows the red message `Form a party first` and stays. A `busy` flag blocks a
+  second key while a request or transition is in progress, and `init()` resets the
+  scene's fields because a restart reuses the same object.
+
+Findings: the old build had no gating at all, so the gating is new behaviour.
+The old `IntroScene` lost the SPACE key if the map failed to load, because the
+listener came after an unguarded `await`.
+
+Known differences from the old build: `J` is refused with no party; a failed
+roster request shows `Server unavailable`; a refresh anywhere returns to the intro;
+there is no in-game way back to the menu (as before).
 
 ### Environment / tooling notes specific to the new stack
 
