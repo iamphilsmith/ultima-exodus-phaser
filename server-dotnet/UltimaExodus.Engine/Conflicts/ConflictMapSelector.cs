@@ -10,6 +10,11 @@ public static class ConflictMapSelector
     public const string Grass = "conflict-grass";
     public const string Shore = "conflict-shore";
 
+    private static readonly string[] MapIds = [Grass, Shore];
+
+    /// <summary>Whether this map id is one of the conflict maps.</summary>
+    public static bool IsConflictMap(string mapId) => MapIds.Contains(mapId);
+
     public static string? Select(PartySurface party, OpponentMovement opponent)
         => (party, opponent) switch
         {

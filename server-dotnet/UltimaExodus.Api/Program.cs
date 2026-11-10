@@ -139,6 +139,17 @@ app.MapPost("api/move", async (MoveRequest request, GameService game) =>
     return Results.Ok(snapshot);
 });
 
+app.MapPost("api/attack", async (AttackRequest request, GameService game) =>
+{
+    if (!Enum.IsDefined(request.Direction))
+    {
+        return Results.BadRequest($"Unknown direction: {request.Direction}");
+    }
+
+    var snapshot = await game.AttackAsync(request.Direction);
+    return Results.Ok(snapshot);
+});
+
 app.MapGet("api/state", async (GameService game) =>
     Results.Ok(await game.GetStateAsync()));
 

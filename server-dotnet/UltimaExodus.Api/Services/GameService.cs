@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UltimaExodus.Api.Configuration;
 using UltimaExodus.Data.Maps;
 using UltimaExodus.Data.Persistence;
+using UltimaExodus.Engine.Conflicts;
 using UltimaExodus.Engine.Locations;
 using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
@@ -73,6 +74,38 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
     }
 
+    public async Task<GameStateSnapshot> AttackAsync(Direction direction)
+    {
+        var state = await GetOrCreateStateAsync();
+
+        // Only the overworld has monsters to attack for now.
+        var conflictMapId = CategoryFor(state.MapId) == MapCategory.World
+            ? AttackResolver.FindConflictMap(
+                MapSourceLoader.LoadMap(MapCategory.World, state.MapId),
+                state.TileX, state.TileY, direction)
+            : null;
+
+        if (conflictMapId is null)
+        {
+            log.Add("Nothing to attack");
+        }
+        else
+        {
+            // Remember where to come back to, then move into the conflict.
+            state.ReturnMapId = state.MapId;
+            state.ReturnTileX = state.TileX;
+            state.ReturnTileY = state.TileY;
+
+            state.MapId = conflictMapId;
+            state.TileX = ConflictDefaults.StartX;
+            state.TileY = ConflictDefaults.StartY;
+            log.Add("Conflict");
+        }
+
+        await db.SaveChangesAsync();
+        return await BuildSnapshotAsync(state);
+    }
+
     private void MoveInLocation(GameState state, MapCategory category, Direction direction)
     {
         var map = MapSourceLoader.LoadMap(category, state.MapId);
@@ -95,10 +128,18 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
     }
 
-    // A map that isn't a location is the overworld. (Dungeons come in a later phase.)
+    // Conflict maps and locations are recognised by id; any other map is the
+    // overworld. (Dungeons come in a later phase.)
     private static MapCategory CategoryFor(string mapId)
-        => LocationCatalogue.FindByMapId(mapId)?.Category ?? MapCategory.World;
+    {
+        if (ConflictMapSelector.IsConflictMap(mapId))
+        {
+            return MapCategory.Conflict;
+        }
 
+        return LocationCatalogue.FindByMapId(mapId)?.Category ?? MapCategory.World;
+    }
+    
     public async Task<GameStateSnapshot> GetStateAsync()
     {
         var state = await GetOrCreateStateAsync();

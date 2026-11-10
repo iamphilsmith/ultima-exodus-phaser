@@ -22,4 +22,14 @@ public class ConflictMapSelectorTests
     {
         Assert.Null(ConflictMapSelector.Select(party, opponent));
     }
+
+    [Theory]
+    [InlineData("conflict-grass", true)]
+    [InlineData("conflict-shore", true)]
+    [InlineData("world-sosaria", false)]
+    [InlineData("town-lcb", false)]
+    public void Recognises_conflict_maps_by_id(string mapId, bool expected)
+    {
+        Assert.Equal(expected, ConflictMapSelector.IsConflictMap(mapId));
+    }
 }
