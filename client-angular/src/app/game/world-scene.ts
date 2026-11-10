@@ -68,8 +68,6 @@ export class WorldScene extends Phaser.Scene {
     this.requestInFlight = false;
     this.partyObjects = [];
 
-    console.log('chars frameTotal:', this.textures.get('chars').frameTotal);
-
     this.drawBorder();
     this.drawMoonPhase();
     this.drawWindDirection();
@@ -81,13 +79,6 @@ export class WorldScene extends Phaser.Scene {
     this.inputService.onMove((direction) => void this.handleMove(direction));
     this.inputService.onInteract(() => void this.handleInteract());
     void this.restoreState();
-
-    // TEMPORARY (Phase 5): the way into party organisation until the Phase 6 main
-    // menu exists. Removed in Phase 6.
-    this.input.keyboard?.on('keydown-O', this.openPartyOrganization);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.keyboard?.off('keydown-O', this.openPartyOrganization);
-    });
   }
 
   override update(): void {
@@ -127,12 +118,6 @@ export class WorldScene extends Phaser.Scene {
   private handleInteract(): Promise<void> {
     return this.request(() => this.gameService.interact(), 'Interact failed:');
   }
-
-  // TEMPORARY (Phase 5), see create().
-  private openPartyOrganization = (): void => {
-    if (this.requestInFlight) return;   // never leave mid-request
-    this.scene.start('organize-party', { exitTo: 'world' });
-  };
 
   /** Put a snapshot on screen: the viewport with fog, and the log panel. */
   private async applySnapshot(snapshot: GameStateSnapshot): Promise<void> {

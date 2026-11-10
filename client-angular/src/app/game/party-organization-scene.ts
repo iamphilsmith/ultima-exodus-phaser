@@ -7,13 +7,13 @@ import { loadSpritesheetOnce } from './assets';
 import { BORDER, CANVAS_H, CANVAS_W, EGA_BLUE } from './shell-layout';
 
 interface PartyOrganizationData {
-  /** Scene key to return to when the player leaves. Defaults to 'world'. */
+  /** Scene key to return to when the player leaves. Defaults to 'main-menu'. */
   exitTo?: string;
 }
 
 export class PartyOrganizationScene extends Phaser.Scene {
   private currentView?: OrgView;
-  private exitTo = 'world';
+  private exitTo = 'main-menu';
 
   constructor(
     private readonly rosterService: RosterService,
@@ -23,7 +23,7 @@ export class PartyOrganizationScene extends Phaser.Scene {
   }
 
   init(data: PartyOrganizationData): void {
-    this.exitTo = data?.exitTo ?? 'world';
+    this.exitTo = data?.exitTo ?? 'main-menu';
     this.currentView = undefined;
   }
 
