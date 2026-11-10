@@ -13,8 +13,8 @@
 > with lettered sub-steps (23a-23h, 24a-24d); steps 25 onward keep their numbers.
 > Phase 5 does it too (26a-26b, 27a-27f, 28a-28c, 31a); steps 29, 30, 31 and 32
 > keep theirs.
-> Phase 6 does it too (33a-33g); steps 34 onward keep their numbers.
-
+> Phase 6 does it too (33a-33g).
+> Phase 7 does it too (34a-34g, 35a-35f); steps 36 onward keep their numbers.
 ---
 
 ## Ground rules
@@ -583,16 +583,98 @@ from the server.
 
 ## Phase 7 — Conflict view stub parity
 
-The old `ConflictView` is itself a stub (maps decoded, not a real combat
-loop) — this phase matches that same level of completeness, not more.
+Goal: pressing `A` and then a direction toward a monster on the overworld starts
+a conflict. The party walks a static 11x11 conflict map, and walking off any edge
+returns to the overworld tile it came from. The old `ConflictView` is itself a
+stub (maps decoded, not a real combat loop), so this phase matches that level of
+completeness, not more.
 
-34. **Add conflict map selection + stub enter endpoint** — `POST
-    api/conflict/enter` using the `ConflictMapSelector` lookup already
-    designed in `ARCHITECTURE.md`; returns a snapshot with the selected
-    static map and placeholder party/monster entity positions.
-35. **Port stub `ConflictView` to the new client** — renders the selected
-    map and static positions, no combat loop, matching the old stub state.
+> **Revised from the original plan.** The original steps 34-35 assumed a
+> `POST api/conflict/enter` endpoint and "placeholder party/monster entity
+> positions". Decisions made while scoping this phase (branch
+> `phase-7-conflict-view`, from `main`):
+> - **Entry is `POST api/attack { direction }`**, not `api/conflict/enter`. Attack
+>   is one of a growing set of commands (some need only a key, some need a second
+>   parameter such as a direction or a hero number). The simplest endpoint is
+>   used now; a general command handler is deferred.
+> - **The return position is persisted.** `GameState` gains nullable return
+>   map/tile columns (migration). While in a conflict, `MapId` holds the conflict
+>   map and the return columns hold the overworld position; they are cleared on
+>   exit. Unlike towns, a conflict can start from any tile, so the position cannot
+>   be found by reverse lookup. A browser refresh mid-conflict resumes in the
+>   conflict (the old build dropped you on the overworld).
+> - **The selector covers only the maps that exist.** `ConflictMapSelector`
+>   returns `conflict-grass` for Land x Land and `conflict-shore` for Land x Sea;
+>   any other combination returns a clear "no map yet". The other maps in
+>   `ARCHITECTURE.md` are a future task. Party surface is hardcoded to Land (no
+>   boats yet). Selecting by terrain is deferred.
+> - **Opponent type comes from the attacked tile** via a small `MonsterCatalogue`
+>   (tile 24 = Land, tile 13 = Sea). The old `CONFLICT_MAPS` `monsterIndex` values
+>   (25 and 14) are Phaser's 1-based indexes for these same tiles. The overworld
+>   has exactly one of each: tile 24 at (41,18), tile 13 at (49,19).
+> - **No entity positions yet.** Both conflict maps already have the party
+>   (tile 20, bottom) and the monsters (tiles 24 or 13, top) baked into the tile
+>   layer, so `Entities` stays empty. They stay as tiles until monsters move.
+> - **Creature tiles are solid** (already so in `TileCatalogue`), so the party
+>   cannot walk through them. The old build could, because every Tiled `solid`
+>   flag was false.
+> - **The party starts at (5,5)** on every conflict map, as in the old build.
+> - **New-game start moved** (34g) to (43,20), two squares south-west of Lord
+>   British's Castle (entrance 45,18), the traditional start. Fresh database only.
 
+**Behaviour matched (old `ConflictView` and `OverworldView.handleAttack`):** `A`
+logs `Direction?`; the next arrow key attacks that way (`Esc` logs `Attack
+cancelled`). A known monster logs `Conflict` and loads its map; anything else logs
+`Nothing to attack`. Inside, arrows move one tile with `<Dir> BLK` when blocked,
+`A` + direction logs `Nothing to attack`, `E` logs `Nothing here`, and stepping off
+any edge logs `Leaving...` and returns to the overworld. No wrapping, no fog.
+
+**Server**
+
+34a. **Conflict engine types** — `ConflictMapSelector`, `PartySurface`,
+    `OpponentMovement` and `MonsterCatalogue` in `UltimaExodus.Engine`. Unit tests
+    for each mapping and for the "no map yet" result.
+34b. **Persist the return position** — nullable return map/tile columns on
+    `GameState`, plus a migration. Tests run the real migration, including the
+    cleared-on-exit case.
+34c. **Check the conflict maps** — map-backed tests: both load as 11x11, (5,5) is
+    walkable on both, and every tile they use is covered by `TileCatalogue`.
+34d. **`POST api/attack { direction }`** — on the overworld, a known monster tile
+    saves the return position, sets the conflict map and the (5,5) start, and logs
+    `Conflict`; anything else (including inside a conflict) logs `Nothing to
+    attack`. An undefined direction is a 400.
+34e. **Conflict movement and exit** — `MoveAsync` dispatches on
+    `MapCategory.Conflict`, reusing `LocationMovement` (no wrap, solid blocks, edge
+    exits). An edge exit logs `Leaving...` and restores the saved overworld
+    position. `E` inside logs `Nothing here`. Tests.
+34f. **Verify** — `scripts/conflict-check.ps1` runs both monsters through enter,
+    bump, exit and refresh mid-conflict (`GET api/state` stays in the conflict).
+34g. **New-game start** — the default position on `world-sosaria` becomes (43,20).
+    Only affects a fresh database.
+
+**Client**
+
+35a. **Attack flow** — `GameService.attack()` and the `A` then direction flow in
+    `WorldScene` (`A` logs `Direction?`, the next arrow sends the attack, `Esc`
+    cancels client-side). Kept small and local so it can fold into a command
+    handler later.
+35b. **`ConflictView`** — a static 11x11 grid with a moving avatar sprite (the map
+    does not scroll), no fog, drawn from the server's map data.
+35c. **Wire `WorldScene`** — choose the view by `position.category`, rebuilding on
+    map change as in Phase 4.
+35d. **Specs** for the pure parts (pending-attack state, avatar position).
+
+**Close-out**
+
+35e. **Confirm conflict parity** — browser checks against the old build: both
+    monsters, walking, creature bumps (intended difference), each exit edge, `A`
+    with no target, `Esc`, refresh mid-conflict.
+35f. **Docs commit** — `MIGRATION_PLAN.md`, `ARCHITECTURE.md` (selector now
+    implemented, with the two-map reality noted) and `CONTEXT.md`.
+
+Known differences from the old build: creature tiles are solid; a refresh
+mid-conflict resumes in the conflict; entry is `POST api/attack`; the selector
+covers two maps.
 ---
 
 ## Phase 8 — Cutover
@@ -639,4 +721,13 @@ committed and confirmed:
   combat, shops and a world clock exist; heroes are created and listed only
 - Starting hit points, food and gold (100 / 0 / 0, as the old database had them;
   the original game uses 150) — a change to `HeroDefaults` when wanted
-- Revisiting solidity of the creature tiles baked into conflict maps (Phase 7: units move)
+- Moving monsters: conflict units that move and chase the hero, which also means
+  revisiting the solidity of the creature tiles baked into the conflict maps
+- A monster next to the hero initiating a conflict (Phase 7 only starts one from
+  the player's attack)
+- Choosing the conflict map from the terrain of the monster and the hero, and the
+  remaining conflict maps from `ARCHITECTURE.md` (sea, boat and the terrain
+  variants); the Phase 7 selector knows only `conflict-grass` and `conflict-shore`
+- A general command handler (keys that need no parameter, a direction, or a hero
+  number, such as `Z` for Zats); Phase 7 wires `A` on its own
+- Combat resolution inside a conflict (the old `ConflictView` has none either)
