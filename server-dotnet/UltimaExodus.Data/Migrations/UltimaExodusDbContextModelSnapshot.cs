@@ -25,6 +25,15 @@ namespace UltimaExodus.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ReturnMapId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ReturnTileX")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ReturnTileY")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("TileX")
                         .HasColumnType("INTEGER");
 
