@@ -16,8 +16,8 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
 {
     private const int SaveSlotId = 1;
     private const string DefaultMapId = "world-sosaria";
-    private const int DefaultTileX = 5;
-    private const int DefaultTileY = 5;
+    private const int DefaultTileX = 43;
+    private const int DefaultTileY = 20;
 
         public async Task<GameStateSnapshot> MoveAsync(Direction direction)
     {

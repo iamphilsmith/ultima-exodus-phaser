@@ -4,9 +4,11 @@ using Microsoft.Extensions.Options;
 using UltimaExodus.Api.Configuration;
 using UltimaExodus.Api.Services;
 using UltimaExodus.Data.Persistence;
+using UltimaExodus.Data.Maps;
 using UltimaExodus.Engine.Maps;
 using UltimaExodus.Engine.Movement;
 using UltimaExodus.Engine.State;
+using UltimaExodus.Engine.Terrain;
 
 namespace UltimaExodus.Engine.Tests;
 
@@ -189,5 +191,28 @@ public class GameServiceConflictTests : IDisposable
 
         Assert.Equal("Nothing to attack", snapshot.Log.Last().Text);
         Assert.Equal("conflict-grass", snapshot.Position.MapId);
+    }
+
+        [Fact]
+    public async Task A_new_game_starts_two_squares_south_west_of_lord_british()
+    {
+        using var db = NewContext();
+
+        var snapshot = await NewService(db).GetStateAsync();
+
+        Assert.Equal(Sosaria, snapshot.Position.MapId);
+        Assert.Equal(MapCategory.World, snapshot.Position.Category);
+        Assert.Equal(43, snapshot.Position.X);
+        Assert.Equal(20, snapshot.Position.Y);
+    }
+
+        [Fact]
+    public void The_new_game_start_tile_is_walkable()
+    {
+        var map = MapSourceLoader.LoadMap(MapCategory.World, Sosaria);
+
+        var tile = map.Tiles[20 * map.Width + 43];
+
+        Assert.False(TileCatalogue.GetProperties(tile).Solid);
     }
 }
