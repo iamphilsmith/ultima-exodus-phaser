@@ -5,6 +5,8 @@ import { MapService } from '../services/map';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import Phaser from 'phaser';
 import { PartyOrganizationScene } from '../game/party-organization-scene';
+import { IntroScene } from '../game/intro-scene';
+import { MainMenuScene } from '../game/main-menu-scene';
 import { RosterService } from '../services/roster';
 import { HeroOptionsService } from '../services/hero-options';
 
@@ -34,6 +36,8 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
       backgroundColor: '#000000',
       pixelArt: true,
       scene: [
+        new IntroScene(this.mapService),
+        new MainMenuScene(this.rosterService),
         new WorldScene(this.overworld, this.mapService, this.tileCatalogue), 
         new PartyOrganizationScene(this.rosterService, this.heroOptions)
       ]
