@@ -19,18 +19,22 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
     private const int DefaultTileX = 5;
     private const int DefaultTileY = 5;
 
-    public async Task<GameStateSnapshot> MoveAsync(Direction direction)
+        public async Task<GameStateSnapshot> MoveAsync(Direction direction)
     {
         var state = await GetOrCreateStateAsync();
         var category = CategoryFor(state.MapId);
 
-        if (category == MapCategory.World)
+        switch (category)
         {
-            MoveOnWorld(state, direction);
-        }
-        else
-        {
-            MoveInLocation(state, category, direction);
+            case MapCategory.World:
+                MoveOnWorld(state, direction);
+                break;
+            case MapCategory.Conflict:
+                MoveInConflict(state, direction);
+                break;
+            default:
+                MoveInLocation(state, category, direction);
+                break;
         }
 
         await db.SaveChangesAsync();
@@ -128,6 +132,46 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
         log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
     }
 
+    private void MoveInConflict(GameState state, Direction direction)
+    {
+        var map = MapSourceLoader.LoadMap(MapCategory.Conflict, state.MapId);
+        var result = LocationMovement.TryMove(
+            map, state.TileX, state.TileY, direction, ignoreSolid: debug.Value.NoClip);
+
+        if (result.Exited)
+        {
+            ReturnFromConflict(state);
+            log.Add("Leaving...");
+            return;
+        }
+
+        state.TileX = result.X;
+        state.TileY = result.Y;
+        log.Add(result.Blocked ? $"{direction} BLK" : direction.ToString());
+    }
+
+    private static void ReturnFromConflict(GameState state)
+    {
+        // The three return values are set together. If any is missing, go to the
+        // default start rather than stranding the party.
+        if (state.ReturnMapId is { } mapId && state.ReturnTileX is { } x && state.ReturnTileY is { } y)
+        {
+            state.MapId = mapId;
+            state.TileX = x;
+            state.TileY = y;
+        }
+        else
+        {
+            state.MapId = DefaultMapId;
+            state.TileX = DefaultTileX;
+            state.TileY = DefaultTileY;
+        }
+
+        state.ReturnMapId = null;
+        state.ReturnTileX = null;
+        state.ReturnTileY = null;
+    }
+
     // Conflict maps and locations are recognised by id; any other map is the
     // overworld. (Dungeons come in a later phase.)
     private static MapCategory CategoryFor(string mapId)
@@ -139,7 +183,7 @@ public class GameService(UltimaExodusDbContext db, ActionLog log, IOptions<Debug
 
         return LocationCatalogue.FindByMapId(mapId)?.Category ?? MapCategory.World;
     }
-    
+
     public async Task<GameStateSnapshot> GetStateAsync()
     {
         var state = await GetOrCreateStateAsync();
