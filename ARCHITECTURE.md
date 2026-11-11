@@ -178,15 +178,13 @@ because every tile-based map shares the same 80-tile sheet, and no tile has
 conflicting attributes across maps. Dungeons are not tile-based and don't use
 the catalogue.
 
-The endpoint will attempt to load a source file for any `MapCategory`
-including `Conflict`, but conflict-map *sourcing/selection* (deciding which
-map to serve for a given encounter) isn't implemented yet — that's
-`ConflictMapSelector`'s job, still to come.
+The endpoint loads a source file for any `MapCategory`, including `Conflict`.
+Which conflict map an encounter uses is decided by `ConflictMapSelector` (see
+"Conflict map selection"); only `conflict-grass` and `conflict-shore` exist.
 
 Conflict maps are the one category the client never requests by name up
 front — the server selects the `MapId` when an encounter triggers and hands
-it to the client inside the encounter snapshot.
-
+it to the client in the snapshot's `Position.MapId`.
 ---
 
 ## Persistence
@@ -198,6 +196,11 @@ file-backed and does not use the database.
 - `GameState` holds the party's saved position (`TileX`, `TileY`, `MapId`).
   Single-player with no login means exactly one row, with a fixed `Id` of 1
   (the key is never database-generated).
+- `GameState` also has nullable `ReturnMapId`, `ReturnTileX` and `ReturnTileY`
+  (Phase 7). They are set together while the party is in a conflict, holding the
+  overworld position to return to, and cleared on exit. Unlike a town, a conflict
+  can start from any tile, so the return position cannot be looked up from the
+  map id.  
 - Migrations are applied at startup via `Database.Migrate()`. The `.db` file is
   gitignored.
 - `Heroes` and `PartySlots` (Phase 5). `Hero` and `PartySlot` are plain classes in
@@ -221,18 +224,19 @@ file-backed and does not use the database.
 
 ## Game endpoints
 
-**Status: implemented (Phase 3; generalised in Phase 4).** All three return a
-full `GameStateSnapshot`.
+**Status: implemented (Phase 3; generalised in Phase 4; attack added in Phase 7).** 
+All four return a full `GameStateSnapshot`.
 
 ```
 POST api/move       body: { "direction": "North" | "South" | "East" | "West" }
 POST api/interact   (no body; E)
+POST api/attack     body: { "direction": "North" | "South" | "East" | "West" }
 GET  api/state      (no body; returns the current state without moving)
 ```
 
 - The endpoints dispatch on the map the party is on (`GameService`), so the
-  client never chooses a rule set. A map that is in `LocationCatalogue` is a
-  town or castle; anything else is the overworld.
+  client never chooses a rule set. A conflict map id is a conflict, a map in `LocationCatalogue` is a town or
+  castle, and anything else is the overworld (`GameService.CategoryFor`).
 - **Overworld move:** `OverworldMovement` (`UltimaExodus.Engine/Movement/`) wraps
   at the map edges and blocks on solid tiles. **Location move:**
   `LocationMovement` does not wrap; stepping off any edge exits to the
@@ -244,10 +248,20 @@ GET  api/state      (no body; returns the current state without moving)
 - `direction` is a string enum, applied to the `Direction` type only. A global
   string-enum converter would also change `MapData.category` from a number to
   a string.
-- `GET api/state` creates the default save (tile (5,5) on `world-sosaria`) if
+- `GET api/state` creates the default save (tile (43,20) on `world-sosaria`) if
   none exists. It is safe to call repeatedly.
 - The client keeps one request in flight at a time, since two overlapping calls
   would both read the same saved position.
+- **Attack:** on the overworld, looks at the tile next to the party in the given
+  direction (wrapping at the edges, `AttackResolver`). A monster tile
+  (`MonsterCatalogue`) saves the return position, switches `MapId` to the map from
+  `ConflictMapSelector`, puts the party at `ConflictDefaults` (5,6) and logs
+  `Conflict`. Anything else, including attacking inside a town or a conflict, logs
+  `Nothing to attack`. An undefined direction is a `400`.
+- **Conflict move:** `LocationMovement` (non-wrapping, solid tiles block). Stepping
+  off any edge logs `Leaving...`, restores the saved overworld position and clears
+  the return columns. If the return position is missing, the party goes to the
+  default start rather than being stranded. `E` inside logs `Nothing here`.
 - **Debug no-clip:** `OverworldMovement` and `LocationMovement` take an
   `ignoreSolid` flag (default false), set from `DebugOptions` (`Debug:NoClip`).
   It is only bound from configuration in Development, so production cannot
@@ -369,8 +383,37 @@ public static class ConflictMapSelector
 }
 ```
 
-**Not yet implemented** — this class doesn't exist in the codebase yet; it's
-target design, slotted for Phase 7 per `MIGRATION_PLAN.md`.
+**Status: partly implemented (Phase 7).** The table and code above are the full
+target design. What exists today, in `UltimaExodus.Engine/Conflicts/`:
+
+```csharp
+public enum PartySurface { Land, Boat }
+public enum OpponentMovement { Land, Sea, Pirate }
+
+public static class ConflictMapSelector
+{
+    public const string Grass = "conflict-grass";
+    public const string Shore = "conflict-shore";
+
+    // Null means "no map yet"; the endpoint logs a message instead of throwing.
+    public static string? Select(PartySurface party, OpponentMovement opponent) => ...;
+    public static bool IsConflictMap(string mapId) => ...;
+}
+```
+
+- Only `conflict-grass` (Land x Land) and `conflict-shore` (Land x Sea; the
+  design's `conflict-land-sea`) exist as map files. Every other combination
+  returns null. Terrain-based selection (`LandTerrainType`) and the remaining maps
+  are future work.
+- `MonsterCatalogue` maps a monster tile to its `OpponentMovement`: tile 24 is a
+  land monster, tile 13 a sea creature (0-based indices). Monsters are baked into
+  the overworld tile layer, so this lookup is by tile; it is replaced when
+  monsters become dynamic. The old build's `monsterIndex` values (25 and 14) were
+  Phaser's 1-based indexes for the same tiles.
+- The party surface is hardcoded to Land until boats exist.
+- Both maps are 11x11 with the party figures (tile 20) baked into the bottom and
+  the monsters (tile 24 or 13) into the top. They stay as solid tiles; moving
+  units are future work.
 
 ---
 
@@ -512,6 +555,27 @@ castles, and dungeon facing and level will be added when the dungeon phase is bu
 - **Journey Onward is gated on `partyFormed`**, read from `GET api/roster` when
   the key is pressed. `R` and `O` are never gated.
 - **No server changes** in this phase.
+
+## Resolved during Phase 7 (conflict view)
+
+- **A conflict stores its return position** in nullable `GameState` columns, so
+  a refresh mid-conflict resumes in the conflict (after the intro and Journey
+  Onward). This also resolves the Phase 6 note about a refresh landing on the
+  intro "when a conflict can be in progress": the intro still shows on every page
+  load, and the saved state decides where Journey Onward goes.
+- **Entry is `POST api/attack { direction }`**, a dispatching endpoint like the
+  others, not a separate `api/conflict/enter`. A general command handler (keys
+  with no parameter, a direction, or a hero number) is deferred.
+- **`CategoryFor` recognises conflict maps by id.** Without this, a conflict map
+  would have been treated as the overworld.
+- **Creature tiles stay baked into the conflict maps** and are solid, so
+  `Entities` stays empty for now.
+- **Client:** `ConflictView` draws the fixed 11x11 grid once and moves only the
+  avatar; `OverworldView` still scrolls. Both implement `MapView`, and
+  `WorldScene` chooses by `map.category`. The attack prompt is the pure
+  `PendingAttack` class.
+- **Client-only log lines:** `Direction?` and `Attack cancelled` never reach the
+  server, so the scene shows them after the server's log until the next snapshot.
 
 ## Open questions / not yet decided
 

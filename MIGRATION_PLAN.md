@@ -175,7 +175,7 @@ client and server actually cooperate on live game state.
     values are hardcoded to match the old static moon phase/wind display —
     making them dynamic is out of scope until cutover. `Party` is a hardcoded
     stub until Phase 5; `Entities` and `Effects` are empty lists. An undefined
-    direction returns 400.
+    direction returns 400. (Phase 7 step 34g changed the default tile to (43,20).)
 17. ✅ **Port `InputService` into Angular** — `game/input-service.ts` (same shape
     as the old class, polled from `WorldScene.update()`), `game/input-direction.ts`,
     and an Angular `OverworldService` (`services/overworld.ts`) that calls the
@@ -581,7 +581,7 @@ Known differences from the old build: `J` is refused when no party is formed;
 from the server.
 ---
 
-## Phase 7 — Conflict view stub parity
+## Phase 7 — Conflict view stub parity ✅ complete
 
 Goal: pressing `A` and then a direction toward a monster on the overworld starts
 a conflict. The party walks a static 11x11 conflict map, and walking off any edge
@@ -618,7 +618,10 @@ completeness, not more.
 > - **Creature tiles are solid** (already so in `TileCatalogue`), so the party
 >   cannot walk through them. The old build could, because every Tiled `solid`
 >   flag was false.
-> - **The party starts at (5,5)** on every conflict map, as in the old build.
+> - **The party starts at (5,6)** on every conflict map. The old build used
+>   (5,5), but that tile is open water on `conflict-shore`. Temporary: real
+>   start positions come when the party and monsters are placed as entities
+>   (up to 8 monsters in the top half, the 4 heroes in the lower half).
 > - **New-game start moved** (34g) to (43,20), two squares south-west of Lord
 >   British's Castle (entrance 45,18), the traditional start. Fresh database only.
 
@@ -631,50 +634,71 @@ any edge logs `Leaving...` and returns to the overworld. No wrapping, no fog.
 
 **Server**
 
-34a. **Conflict engine types** — `ConflictMapSelector`, `PartySurface`,
-    `OpponentMovement` and `MonsterCatalogue` in `UltimaExodus.Engine`. Unit tests
-    for each mapping and for the "no map yet" result.
-34b. **Persist the return position** — nullable return map/tile columns on
-    `GameState`, plus a migration. Tests run the real migration, including the
-    cleared-on-exit case.
-34c. **Check the conflict maps** — map-backed tests: both load as 11x11, (5,5) is
-    walkable on both, and every tile they use is covered by `TileCatalogue`.
-34d. **`POST api/attack { direction }`** — on the overworld, a known monster tile
-    saves the return position, sets the conflict map and the (5,5) start, and logs
-    `Conflict`; anything else (including inside a conflict) logs `Nothing to
-    attack`. An undefined direction is a 400.
-34e. **Conflict movement and exit** — `MoveAsync` dispatches on
-    `MapCategory.Conflict`, reusing `LocationMovement` (no wrap, solid blocks, edge
-    exits). An edge exit logs `Leaving...` and restores the saved overworld
-    position. `E` inside logs `Nothing here`. Tests.
-34f. **Verify** — `scripts/conflict-check.ps1` runs both monsters through enter,
-    bump, exit and refresh mid-conflict (`GET api/state` stays in the conflict).
-34g. **New-game start** — the default position on `world-sosaria` becomes (43,20).
-    Only affects a fresh database.
+34a. ✅ **Conflict engine types** — `ConflictMapSelector`, `PartySurface`,
+     `OpponentMovement` and `MonsterCatalogue` in `UltimaExodus.Engine/Conflicts/`.
+     Land x Land gives `conflict-grass`, Land x Sea gives `conflict-shore`, and
+     every other combination returns null ("no map yet"). Unit tests.
+34b. ✅ **Persist the return position** — nullable `ReturnMapId`, `ReturnTileX`
+     and `ReturnTileY` on `GameState`, migration `AddConflictReturnPosition`.
+     Existing saves are untouched (the columns are NULL). Persistence tests run
+     the real migrations.
+34c. ✅ **Check the conflict maps** — map-backed tests: both maps load as 11x11,
+     the start tile is walkable, and they use only tiles 0, 1, 2, 13, 20 and 24.
+     This found that (5,5) is water on `conflict-shore`, so the shared start
+     became (5,6) (`ConflictDefaults`).
+34d. ✅ **`POST api/attack { direction }`** — `AttackResolver` (pure, wraps at the
+     map edge) finds the monster, `GameService.AttackAsync` saves the return
+     position, switches `MapId` and logs `Conflict`; otherwise `Nothing to
+     attack`. `CategoryFor` now recognises conflict maps (`IsConflictMap`);
+     before this, a conflict map would have been reported as the overworld.
+34e. ✅ **Conflict movement and exit** — `MoveAsync` dispatches on
+     `MapCategory.Conflict`, reusing `LocationMovement`. An edge exit logs
+     `Leaving...`, restores the saved overworld position and clears the return
+     columns. A missing return position falls back to the default start. `E`
+     inside logs `Nothing here`. `GameServiceConflictTests` runs against
+     in-memory SQLite and the real map files.
+34f. ✅ **Verify** — `scripts/conflict-check.ps1` (needs the no-clip profile)
+     runs both monsters through enter, refresh, `E`, `A`, the west edge and exit,
+     plus nothing-to-attack and the bad-direction 400s; all 35 checks pass.
+     No-clip makes creature tiles walkable, so bumping is covered by the service
+     tests and the browser, not by the script.
+34g. ✅ **New-game start** — the default position on `world-sosaria` is (43,20),
+     two squares south-west of Lord British's Castle (entrance 45,18). Affects a
+     fresh database only.
 
 **Client**
 
-35a. **Attack flow** — `GameService.attack()` and the `A` then direction flow in
-    `WorldScene` (`A` logs `Direction?`, the next arrow sends the attack, `Esc`
-    cancels client-side). Kept small and local so it can fold into a command
-    handler later.
-35b. **`ConflictView`** — a static 11x11 grid with a moving avatar sprite (the map
-    does not scroll), no fog, drawn from the server's map data.
-35c. **Wire `WorldScene`** — choose the view by `position.category`, rebuilding on
-    map change as in Phase 4.
-35d. **Specs** for the pure parts (pending-attack state, avatar position).
+35a. ✅ **Attack flow** — `GameService.attack()`, and `A` then a direction in
+     `WorldScene`. The pure `PendingAttack` class holds the "waiting for a
+     direction" state. `Direction?` and `Attack cancelled` are client-only lines
+     shown after the server's log until the next snapshot replaces them.
+35b. ✅ **`ConflictView`** — a static 11x11 grid drawn once, with an avatar that
+     moves across it and no fog. A small `MapView` interface lets `WorldScene` hold
+     either view. `tilePixel` lives in `shell-layout.ts` (Phaser-free) so it can be
+     unit-tested.
+35c. ✅ **Wire `WorldScene`** — `createView(map)` builds a `ConflictView` for the
+     `Conflict` category and an `OverworldView` for everything else; the existing
+     rebuild-on-map-change logic does the rest.
+35d. ✅ **Specs** — `pending-attack.spec.ts` and `tilePixel` specs in
+     `shell-layout.spec.ts` (Vitest matchers: `toBe(true)`, not Jasmine's
+     `toBeTrue`).
 
 **Close-out**
 
-35e. **Confirm conflict parity** — browser checks against the old build: both
-    monsters, walking, creature bumps (intended difference), each exit edge, `A`
-    with no target, `Esc`, refresh mid-conflict.
-35f. **Docs commit** — `MIGRATION_PLAN.md`, `ARCHITECTURE.md` (selector now
-    implemented, with the two-map reality noted) and `CONTEXT.md`.
+35e. ✅ **Confirm conflict parity** — browser checks against the old build: both
+     monsters, walking to every edge, creature bumps, each exit, `A` with no
+     target, `Esc`, and refresh mid-conflict (intro, then Journey Onward resumes
+     in the conflict).
+35f. ✅ **Docs commit.**
 
-Known differences from the old build: creature tiles are solid; a refresh
-mid-conflict resumes in the conflict; entry is `POST api/attack`; the selector
-covers two maps.
+Known differences from the old build: the party starts at (5,6), not (5,5);
+creature tiles are solid (the old build let you walk through them); a refresh
+mid-conflict resumes in the conflict after the intro and Journey Onward (the old
+build dropped you on the overworld); entry goes through `POST api/attack`; the
+selector covers two maps; the old `Loading conflict-grass` log line is gone;
+`Direction?` and `Attack cancelled` are replaced by the next server response
+instead of staying in the scrolling log; `E` and a second `A` are ignored while
+waiting for a direction; a new game starts at (43,20).
 ---
 
 ## Phase 8 — Cutover

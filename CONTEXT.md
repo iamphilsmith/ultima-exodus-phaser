@@ -123,7 +123,7 @@ file's Phase 1 section for the corrected/expanded step list. Summary of what exi
 - **`GET api/maps/{category}/{mapId}`** — returns `MapData` as JSON. `400` for an
   unrecognized category string, `404` if the map file doesn't exist. Accepts every
   `MapCategory` including `Conflict`, but conflict-map *sourcing/selection* logic
-  doesn't exist yet (that's `ConflictMapSelector`, still Phase 7 work).
+  is ConflictMapSelector (added in Phase 7; only two conflict maps exist).
 - **Angular `MapService`** (`client-angular/src/app/services/map.ts`) — fetch-and-cache
   service, singleton (`@Service()`), in-memory cache keyed by `category:mapId`. Also
   tracks in-flight requests per key so two concurrent calls for the same uncached map
@@ -246,7 +246,7 @@ Findings from reading the old stack and the map data:
   them; it uses the server `TileCatalogue`.
 - Conflict maps use only tiles 0, 1, 2, 13, 20 and 24, all covered by the
   catalogue. Their party and monster tiles are baked in too, so they are solid;
-  Phase 7 should revisit that when units move.
+  Phase 7 left them as solid tiles. Revisit when units move.
 
 Known differences from the old build: refresh inside a town resumes in the town;
 the two baked-in overworld creatures (a sea serpent and a tile-24 monster) are
@@ -371,6 +371,56 @@ Known differences from the old build: `J` is refused with no party; a failed
 roster request shows `Server unavailable`; a refresh anywhere returns to the intro;
 there is no in-game way back to the menu (as before).
 
+### Phase 7 — Conflict view parity ✅ complete
+
+Full step list in `MIGRATION_PLAN.md` (34a-35f). `A` then a direction toward a
+monster on the overworld enters a conflict; the party walks a fixed 11x11 map and
+walking off any edge returns to the tile it came from. As in the old build there
+is no combat loop (the old `ConflictView` was a positions-only stub).
+
+- **Endpoint** — `POST api/attack { direction }`, handled by `GameService.AttackAsync`.
+  `AttackResolver` (pure, `UltimaExodus.Engine/Conflicts/`) reads the tile next to
+  the party, wrapping at the overworld edges. `MonsterCatalogue` says tile 24 is a
+  land monster and tile 13 a sea creature; `ConflictMapSelector` picks
+  `conflict-grass` (Land x Land) or `conflict-shore` (Land x Sea) and returns null
+  for everything else. The two monsters on the overworld are at (41,18) and (49,19).
+- **State** — nullable `ReturnMapId`/`ReturnTileX`/`ReturnTileY` on `GameState`
+  (migration `AddConflictReturnPosition`). While in a conflict `MapId` is the
+  conflict map and the return columns hold the overworld position; leaving
+  restores it and clears them. A refresh resumes in the conflict. `CategoryFor`
+  reports `Conflict` for the two conflict map ids.
+- **Movement** — `LocationMovement` is reused. The party starts at (5,6)
+  (`ConflictDefaults`; (5,5) is water on `conflict-shore`); temporary until the
+  party and monsters are placed as entities.
+- **New game** — a fresh database starts at (43,20), two squares south-west of
+  Lord British's Castle.
+- **Client** — `ConflictView` draws the 11x11 tiles once and moves only the avatar
+  (`tilePixel` in `shell-layout.ts`); `OverworldView` scrolls. Both implement
+  `MapView`; `WorldScene.createView` chooses by `map.category`. `A` starts the
+  pure `PendingAttack`; the next arrow key attacks instead of moving, and `Esc`
+  cancels. `Direction?` and `Attack cancelled` are client-only lines shown after
+  the server's log until the next snapshot.
+- **Check script** — `scripts/conflict-check.ps1` (needs the no-clip profile) runs
+  35 checks across both monsters. No-clip makes creature tiles walkable, so
+  bumping is covered by `GameServiceConflictTests` and the browser instead.
+
+Findings: the old build's `monsterIndex` values (25 and 14) are Phaser's 1-based
+indexes for tiles 24 and 13. The conflict maps already contain the 4 party figures
+(bottom) and 8 monsters (top) as tiles, so no entity layer was needed. Entering a
+conflict made `CategoryFor` return the overworld until it learned about conflict
+maps.
+
+Known differences from the old build: start tile (5,6) not (5,5); creature tiles
+are solid; a refresh mid-conflict resumes in the conflict (after the intro); entry
+is `POST api/attack`; only two conflict maps; the old `Loading ...` log line is
+gone; `Direction?` and `Attack cancelled` are replaced by the next server
+response; `E` and a second `A` are ignored while waiting for a direction; new games
+start at (43,20).
+
+Deferred: moving monsters that chase the hero, monsters starting a conflict when
+adjacent, terrain-based map selection and the remaining conflict maps, a general
+command handler (keys like `Z`, which takes a hero number), and combat itself.
+
 ### Environment / tooling notes specific to the new stack
 
 - **Angular 22 introduced a genuine `@Service()` decorator**, replacing
@@ -395,7 +445,7 @@ there is no in-game way back to the menu (as before).
   working directory, so run the API from inside `UltimaExodus.Api/`
   (`cd server-dotnet/UltimaExodus.Api && dotnet run`).
 
-### Gotchas hit during Phase 0-5
+### Gotchas hit during Phase 0-7
 
 - **Newly created files may not be visible to the compiler until staged in git** —
   likely an editor-flush timing issue, not a real dotnet/git interaction. Running
@@ -521,6 +571,14 @@ there is no in-game way back to the menu (as before).
   `hero` property is not null.
 - **Test commands that exit**: `npm test -- --watch=false` (the plain `ng test`
   keeps watching); `dotnet test` from `server-dotnet/`.
+- **Client specs use Vitest matchers**: `toBe(true)`, not Jasmine's `toBeTrue()`.
+  Keep Phaser out of anything a spec imports (Phaser touches the canvas on load),
+  which is why `tilePixel` is in `shell-layout.ts` and not in `conflict-view.ts`.
+- **A PowerShell function returns everything it writes to the screen**, so a
+  `Check` helper called inside another function pollutes that function's return
+  value. `conflict-check.ps1` keeps its checks at the top level.
+- **A conflict map id must be recognised by `GameService.CategoryFor`.** Any map
+  it doesn't know is treated as the overworld.
 
 ---
 
@@ -752,21 +810,17 @@ overworld. Conflict maps (`conflict-grass`, `conflict-shore`) use only tiles 0, 
   (`startAttack`/`cancelAttack`/direction-based `handleAttack`) is fully
   plumbed through `InputService` into the active view, and `enterConflict()`
   loads a `ConflictMapConfig` (from a `data/conflict-maps.ts` module, via
-  `CONFLICT_MAPS`/`getDefaultConflictMap()`) and transitions into it. **Not
-  yet confirmed:** whether `ConflictView` itself renders a real combat loop
-  or is still a positions-only stub — `ConflictView.ts` hasn't been reviewed
-  directly, only its usage from `WorldScene.ts`. Confirm before relying on
-  this note for Phase 2/7 scoping.
+  `CONFLICT_MAPS`/`getDefaultConflictMap()`) and transitions into it. Confirmed in Phase 7: it is 
+  a positions-only stub (an avatar on a static 11x11 map; `Leaving...` on an edge exit, no 
+  combat loop)..
 
 ### Still To Do 📋
-- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phases 0-4 complete — see "New Stack Progress" above)
+- **Architecture migration** — Angular + Phaser client / C# server split; see `ARCHITECTURE.md` and `MIGRATION_PLAN.md` for target design and progress (Phases 0-7 complete — see "New Stack Progress" above)
 - Wire real moon phase data to `drawMoonPhase()`
 - Wire real wind direction data to `drawWindDirection()`
 - Populate party panel from real character data (BCD-encoded, from ROSTER.ULT / PARTY.ULT)
 - Add fog of war to `TownView`
-- Confirm exact state of `ConflictView`'s combat loop (see note above) — the
-  old "Step ④: CombatView — static map, no fog, not started" line here was
-  stale; some conflict/attack plumbing already exists
+- Combat in `ConflictView` (the old stub has none; the new stack's Phase 7 is also stub parity)
 - Step ⑤: `DungeonView` — first-person renderer (see Dungeon View section below)
 - Ambrosia shrine entry/exit coordinates (stubbed)
 - Eventually: tile animation, character sprites, title screen, NPC dialog system
@@ -811,7 +865,7 @@ src/
   mapviews/MapView.ts           — interface: load(), handleMove(), handleInteract(), teardown()
   mapviews/OverworldView.ts     — wrapping movement, fog of war, save on move
   mapviews/TownView.ts          — non-wrapping movement, edge-exit back to overworld
-  mapviews/ConflictView.ts      — combat map view; extent of implementation not yet confirmed (see "Working ✅" note)
+  mapviews/ConflictView.ts      — conflict map view (positions-only stub, no combat loop)
   data/conflict-maps.ts         — CONFLICT_MAPS list + getDefaultConflictMap(); ConflictMapConfig type
   services/InputDirection.ts    — InputDirection enum + offset/name lookup tables
   services/InputService.ts      — keyboard → named action emitter; also emits onAttack/onCancel (direction-based attack flow), not just move/interact
@@ -849,7 +903,7 @@ MapView (interface)   — load(), handleMove(), handleInteract(), teardown()
       │
       ├── OverworldView   wrapping movement, fog of war, save on move          ✅
       ├── TownView        no wrapping, walk off edge exits to overworld         ✅
-      ├── ConflictView    static 11×11 map, party + monster positions           ❓ exists, wired in; combat-loop completeness unconfirmed
+      ├── ConflictView    static 11×11 map, party + monster positions           ✅ stub: positions only, no combat loop
       └── DungeonView     first-person renderer                                 📋
 ```
 
@@ -880,7 +934,7 @@ private async enterLocation(def: LocationDef): Promise<void> {
 |---|---|---|---|
 | OverworldView | Yes | None (top level) | Raycasting, vision-blocking tiles |
 | TownView | No | Walk off any edge → return to Overworld | TBD |
-| ConflictView | No | Win/lose/flee condition (assumed — unconfirmed) | None (full visibility, assumed) |
+| ConflictView | No | Walk off any edge → return to Overworld (stub; no win/lose/flee yet) | None (full visibility) |
 | DungeonView | No | Ladder up from level 1 | Render distance only |
 
 ---
