@@ -35,3 +35,8 @@ export const EGA_BRIGHT_BLUE = 0x5454fc;
 export function centredStartX(length: number, scale = 1): number {
     return Math.floor((CANVAS_W - length * CHAR_W * scale) / 2);
 }
+
+/** Top-left pixel of the tile at map coordinates (x, y) when the 11x11 map fills the viewport. */
+export function tilePixel(x: number, y: number): { x: number; y: number } {
+  return { x: MAP_X + x * TILE, y: MAP_Y + y * TILE };
+}
