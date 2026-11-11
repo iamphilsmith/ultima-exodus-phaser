@@ -5,6 +5,7 @@ import { PartyPosition } from '../services/game';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { canSee } from './line-of-sight';
 import { EGA_BLACK, MAP_X, MAP_Y, TILE, VIEW_TILES } from './shell-layout';
+import { MapView } from './map-view';
 
 const VIEW_RADIUS = Math.floor(VIEW_TILES / 2); // 5 tiles either side of the party
 const AVATAR_FRAME = 20; // party avatar in the 'tiles' sheet
@@ -15,7 +16,7 @@ const FOG_ALPHA = 0.9;
  * The 121 tile images never move: render() just changes which frame each one
  * shows and redraws the fog.
  */
-export class OverworldView {
+export class OverworldView implements MapView {
   private tileSprites: Phaser.GameObjects.Image[][] = [];
   private avatar: Phaser.GameObjects.Image;
   private fog: Phaser.GameObjects.Graphics;
