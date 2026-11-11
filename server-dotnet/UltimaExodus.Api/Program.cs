@@ -58,6 +58,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors("AngularDev");
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
