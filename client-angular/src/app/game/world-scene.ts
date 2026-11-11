@@ -1,13 +1,15 @@
 import { InputService } from './input-service'
 import { InputDirection } from './input-direction'
 import { CompassDirection, GameStateSnapshot, LogEntry, GameService, PartyStatus } from '../services/game';
-import { MapService } from '../services/map';
+import { MapView } from './map-view';
 import { OverworldView } from './overworld-view';
+import { ConflictView } from './conflict-view';
 import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
 import { partyRows } from './party-rows';
 import { loadSpritesheetOnce } from './assets';
 import { PendingAttack } from './pending-attack';
+import { MapCategory, MapData, MapService } from '../services/map';
 
 import Phaser from 'phaser';
 import {
@@ -44,7 +46,7 @@ export class WorldScene extends Phaser.Scene {
   private partyObjects: Phaser.GameObjects.GameObject[] = [];
   private inputService!: InputService;
   private requestInFlight = false;
-  private overworldView?: OverworldView;
+  private mapView?: MapView;
   private pendingAttack = new PendingAttack();
   private serverLog: LogEntry[] = [];
   private localLog: LogEntry[] = []; // client-only prompts, dropped at the next snapshot
@@ -68,7 +70,7 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     // This scene is restarted when the player returns from party organisation, and a
     // restart reuses this same object: drop anything left over from last time.
-    this.overworldView = undefined;
+    this.mapView = undefined;
     this.requestInFlight = false;
     this.partyObjects = [];
 
@@ -162,11 +164,11 @@ export class WorldScene extends Phaser.Scene {
       this.tileCatalogue.load(), // no-op after the first call
     ]);
 
-    let view = this.overworldView;
+    let view = this.mapView;
     if (view?.mapId !== map.mapId) {
       view?.destroy();
-      view = new OverworldView(this, map, this.tileCatalogue);
-      this.overworldView = view;
+      view = this.createView(map);
+      this.mapView = view;
     }
     view.render(snapshot.position);
 
@@ -174,6 +176,13 @@ export class WorldScene extends Phaser.Scene {
     this.localLog = [];
     this.showLog(snapshot.log);
     this.showParty(snapshot.party);
+  }
+
+  /** A conflict map is a fixed grid; every other map scrolls around the party. */
+  private createView(map: MapData): MapView {
+    return map.category === MapCategory.Conflict
+      ? new ConflictView(this, map)
+      : new OverworldView(this, map, this.tileCatalogue);
   }
 
   private drawBorder(): void {
