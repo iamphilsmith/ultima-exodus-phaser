@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { apiBaseUrl } from '../utils/api-base-url';
 import { MapCategory } from './map';
+import { PendingAttack } from '../game/pending-attack';
 
 export type CompassDirection = 'North' | 'East' | 'South' | 'West';
 
@@ -80,6 +81,12 @@ export class GameService {
     interact(): Promise<GameStateSnapshot> {
         return firstValueFrom(
             this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/interact`, {})
+        );
+    }
+
+    attack(direction: CompassDirection): Promise<GameStateSnapshot> {
+        return firstValueFrom(
+            this.http.post<GameStateSnapshot>(`${apiBaseUrl()}/api/attack`, { direction })
         );
     }
 }

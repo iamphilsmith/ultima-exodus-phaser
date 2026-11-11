@@ -7,6 +7,7 @@ import { TileCatalogueService } from '../services/tile-catalogue';
 import { logRows } from './log-rows';
 import { partyRows } from './party-rows';
 import { loadSpritesheetOnce } from './assets';
+import { PendingAttack } from './pending-attack';
 
 import Phaser from 'phaser';
 import {
@@ -44,6 +45,9 @@ export class WorldScene extends Phaser.Scene {
   private inputService!: InputService;
   private requestInFlight = false;
   private overworldView?: OverworldView;
+  private pendingAttack = new PendingAttack();
+  private serverLog: LogEntry[] = [];
+  private localLog: LogEntry[] = []; // client-only prompts, dropped at the next snapshot
 
   constructor(
     private readonly gameService: GameService,
@@ -74,10 +78,15 @@ export class WorldScene extends Phaser.Scene {
     this.drawPartyPanelFooter();
     this.drawLogPanel();
     this.refreshLog();
+    this.pendingAttack = new PendingAttack();
+    this.serverLog = [];
+    this.localLog = [];
 
     this.inputService = new InputService(this);
     this.inputService.onMove((direction) => void this.handleMove(direction));
     this.inputService.onInteract(() => void this.handleInteract());
+    this.inputService.onAttack(() => this.handleAttackKey());
+    this.inputService.onCancel(() => this.handleCancel());
     void this.restoreState();
   }
 
@@ -111,12 +120,39 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private async handleMove(direction: InputDirection): Promise<void> {
+    private async handleMove(direction: InputDirection): Promise<void> {
+    // If an attack is waiting for a direction, this key answers it instead of moving.
+    if (this.pendingAttack.take()) {
+      return this.request(
+        () => this.gameService.attack(OVERWORLD_COMPASS[direction]),
+        'Attack failed:'
+      );
+    }
     return this.request(() => this.gameService.move(OVERWORLD_COMPASS[direction]), 'Move failed:');
   }
 
   private handleInteract(): Promise<void> {
+    if (this.pendingAttack.isWaiting) return Promise.resolve();
     return this.request(() => this.gameService.interact(), 'Interact failed:');
+  }
+
+  private handleAttackKey(): void {
+    if (this.requestInFlight) return;
+    if (this.pendingAttack.start()) {
+      this.showLocalLine('Direction?');
+    }
+  }
+
+  private handleCancel(): void {
+    if (this.pendingAttack.cancel()) {
+      this.showLocalLine('Attack cancelled');
+    }
+  }
+
+  /** Show a client-only line after the server's log. The next snapshot replaces it. */
+  private showLocalLine(text: string): void {
+    this.localLog.push({ text });
+    this.showLog([...this.serverLog, ...this.localLog]);
   }
 
   /** Put a snapshot on screen: the viewport with fog, and the log panel. */
@@ -134,6 +170,8 @@ export class WorldScene extends Phaser.Scene {
     }
     view.render(snapshot.position);
 
+    this.serverLog = snapshot.log;
+    this.localLog = [];
     this.showLog(snapshot.log);
     this.showParty(snapshot.party);
   }
