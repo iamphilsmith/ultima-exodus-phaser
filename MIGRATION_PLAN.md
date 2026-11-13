@@ -703,8 +703,43 @@ waiting for a direction; a new game starts at (43,20).
 
 ## Phase 8 — Cutover
 
-36. **Full parity smoke test** — walk every item in `CONTEXT.md`'s "Working
-    ✅" list against the new stack end to end.
+37. **Parity smoke test** — three passes. Anything that fails is fixed in its own
+    commit, or moved to "Explicitly deferred" with a reason.
+
+    **A. Automated** (Development; stop the API and delete
+    `UltimaExodus.Api/ultima-exodus.db*` before the first script)
+    - ✅ `dotnet test` (server-dotnet) and `ng test --watch=false` (client-angular) pass
+    - ✅ `dotnet run`, then `scripts/party-check.ps1` → `ALL PASSED`
+    - ✅ Restart with `--launch-profile http-noclip`, then `parity-check.ps1`
+          and `conflict-check.ps1` → all pass
+
+    **B. Browser on the hosted build** (`ng build`, then
+    `dotnet run --launch-profile play`, open `http://localhost:5223/`; start from
+    a fresh DB, then keep the roster and party you create)
+    - ✅ Intro: frame, title and map draw; SPACE opens the main menu
+    - ✅ Menu: `J` with no party shows `Form a party first`; `R` returns to the intro
+    - ✅ Register / Create / Form party / Disperse / Terminate behave as in the
+          old build (see the party-check script for the cases); a terminated hero
+          cannot join a party
+    - ✅ `J` enters the world: overworld, border, panels, party panel shows the
+          real party, hardcoded moon `►(0)(1)◄` and wind `►South Wind◄`
+    - ✅ Movement in all four directions; blocked tiles refuse; the map wraps at
+          all four edges; fog of war follows the old rules, including across a wrap
+    - ✅ `E` on a town and a castle enters; walking off any edge exits to the
+          overworld at the entrance; Lord British's Castle included
+    - ✅ `A` then a direction at the two overworld monsters (41,18) and (49,19)
+          enters a conflict; `Esc` cancels; walking off an edge returns to the same tile
+    - ✅ Action log shows the newest seven lines, padded at the top
+    - ✅ Refresh: always returns to the intro; `J` resumes the saved position,
+          including inside a town or a conflict
+    - ✅ Browser console: no errors; Network tab: every request is to `:5223`
+
+    **C. Sweep (optional, no-clip)** — enter every town and castle entrance once.
+
+    Expected differences, not failures: no walking bump animation; `J` refused
+    without a party; creature tiles are solid; conflict start (5,6); new games
+    start at (43,20); a failed request shows a message; the log can survive a
+    browser refresh (it lives on the server, not in the database).
 37. **Remove the legacy stack** — delete `server/`, the old `src/`,
     `drizzle.config.ts`, related npm scripts; promote `client-angular/` and
     `server-dotnet/` to their permanent locations (e.g. repo root or
