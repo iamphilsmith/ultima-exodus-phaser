@@ -23,24 +23,26 @@ builder.Services.AddDbContext<UltimaExodusDbContext>(options =>
 builder.Services.AddSingleton<ActionLog>();
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<RosterService>();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AngularDev", policy =>
-    {
-       policy.SetIsOriginAllowed(origin =>
-            {
-                var host = new Uri(origin).Host;
-                return host == "localhost" || host.EndsWith(".app.github.dev");
-            })
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
-});
 
+// Development only: the Angular dev server (4200) calls the API (5223) cross-origin.
 // The Debug section is only read in Development, so setting Debug__NoClip in a
 // production environment will have no effect.
 if (builder.Environment.IsDevelopment())
 {
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AngularDev", policy =>
+        {
+            policy.SetIsOriginAllowed(origin =>
+                {
+                    var host = new Uri(origin).Host;
+                    return host == "localhost" || host.EndsWith(".app.github.dev");
+                })
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+    });
+
     builder.Services.Configure<DebugOptions>(builder.Configuration.GetSection("Debug"));
 }
 
@@ -55,13 +57,12 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("AngularDev");
     app.MapOpenApi();
 }
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
-
-app.UseCors("AngularDev");
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
