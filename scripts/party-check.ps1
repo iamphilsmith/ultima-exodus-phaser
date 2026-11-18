@@ -1,5 +1,5 @@
 # Phase 5 party organisation check. Run against a FRESH database: stop the API,
-# delete server-dotnet\UltimaExodus.Api\ultima-exodus.db*, then start it again.
+# delete server\UltimaExodus.Api\ultima-exodus.db*, then start it again.
 $base = "http://localhost:5223"
 $failures = 0
 
