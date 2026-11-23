@@ -1,5 +1,5 @@
 # Phase 7 conflict check. Run against the API started with the no-clip profile:
-#   cd server-dotnet\UltimaExodus.Api
+#   cd server\UltimaExodus.Api
 #   dotnet run --launch-profile http-noclip
 # Start with the party on the overworld (not in a town or a conflict).
 # No-clip also makes creature tiles walkable inside a conflict, so bumping into
