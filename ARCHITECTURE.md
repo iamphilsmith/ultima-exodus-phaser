@@ -170,4 +170,171 @@ the client never picks a rule set: a conflict map id is a conflict, a map in
 
 - **Overworld move:** `OverworldMovement` (`UltimaExodus.Engine/Movement/`) wraps at
   the edges and blocks on solid tiles.
-- **Location and conflict move:**
+- **Location and conflict move:** `LocationMovement` does not wrap; solid tiles
+  block, and stepping off any edge exits. All movement rules are pure functions
+  (map, position and a compass `Direction` in, a result out) with no database,
+  HTTP or logging; `GameService` orchestrates them. The client maps keys to
+  directions (Up is North).
+- **Log lines:** the direction (`North`), `North BLK` when blocked, `Leaving...` on
+  exit, `Nothing here` for E with nothing to do.
+- **Interact:** on an overworld location entrance, enters it (spawn tile and enter
+  message, such as `Britain`).
+- **Attack:** on the overworld, `AttackResolver` looks at the tile next to the party
+  in the given direction, wrapping at the edges. A monster tile (`MonsterCatalogue`)
+  saves the return position, switches `MapId` to the map from `ConflictMapSelector`,
+  places the party at `ConflictDefaults` (5,6) and logs `Conflict`. Anything else,
+  including attacking inside a town or conflict, logs `Nothing to attack`. An
+  undefined direction is a `400`. Leaving a conflict restores the saved position and
+  clears the return columns; if it is missing the party goes to the default start
+  rather than being stranded.
+- **`direction` is a string enum, applied to the `Direction` type only.** A global
+  string-enum converter would also turn `MapData.category` into a string.
+- **`GET api/state`** creates the default save (tile (43,20) on `world-sosaria`) if
+  none exists. It is safe to call repeatedly.
+- **One request in flight.** The client sends one at a time, since two overlapping
+  calls would read the same saved position.
+- **Debug no-clip:** `OverworldMovement` and `LocationMovement` take an
+  `ignoreSolid` flag, set from `DebugOptions` (`Debug:NoClip`). It is bound from
+  configuration in Development only, so production cannot enable it, and the pure
+  engine never reads config. An edge exit is a rule, not collision, so no-clip does
+  not stop it. Run it with `dotnet run --launch-profile http-noclip`; changing it
+  needs a restart.
+
+## Locations
+
+`LocationCatalogue` (`UltimaExodus.Engine/Locations/`) holds the 12 overworld
+entrances. Each `LocationDef` has the map id (the file name, such as
+`town-devil-guard`), the category, the overworld map and tile that triggers entry,
+the spawn tile (towns (0,32), castles (32,63)) and the enter message.
+
+- `FindByWorldTile` answers E on the overworld; `FindByMapId` answers leaving.
+- Ambrosia shrines are not placed yet; `LocationDef.WorldMapId` leaves room.
+- The client draws every tile-based map with the same viewport class
+  (`OverworldView`). For towns, castles and conflicts it does not wrap, hides
+  out-of-bounds tiles and draws no fog.
+
+## Party organization
+
+The pre-game screens (register, create character, form party, disperse, terminate)
+have their own endpoints. Hero and party state is **server-owned**: the client
+keeps only the menu cursor and half-typed input and sends the final payload.
+
+```
+GET  api/hero-options      races, classes, sexes (name + initial) and the limits
+GET  api/roster            RosterSnapshot
+POST api/roster/create     CreateHeroRequest  -> { status: Created | RosterFull, entry, roster }
+POST api/roster/terminate  { entry }          -> { status: Terminated | Empty | InParty, roster }
+POST api/party/form        { entries }        -> { status: Formed | AlreadyFormed | Duplicate | EmptyEntry, roster }
+POST api/party/disperse    (no body)          -> RosterSnapshot
+```
+
+```csharp
+public record RosterSnapshot(List<RosterEntrySnapshot> Entries, bool PartyFormed);
+public record RosterEntrySnapshot(int Entry, RosterHeroSnapshot? Hero, int? PartyPosition);
+public record RosterHeroSnapshot(string Name, string Initials, int Level);
+```
+
+- **Always 20 entries**, empty ones with a null `Hero`, so a screen draws its rows
+  straight from the list. `Entry` is 1-20 and `PartyPosition` is 1-4. `Initials`
+  (`MHF` = male human fighter) is computed on the server (`HeroInitials`).
+- **Every command returns its status and the full updated roster**: no refetch, no
+  diffing.
+- **Rules are plain C# in Engine** (`UltimaExodus.Engine/Heroes/`):
+  `CreationRules.Validate` (name 1-12 characters, each stat 0-25, total exactly 50),
+  `Roster.NextFreeEntry`, `Roster.CheckTerminate`, `PartyRules.CheckForm` (checks in
+  order: party already formed, wrong shape, duplicates, empty entries).
+  `RosterService` loads rows, asks the rules, saves; the roster snapshot is built by
+  the pure `RosterSnapshotBuilder`. The client mirrors only the messages, using
+  limits from `GET api/hero-options`, the single source for the lists and limits.
+- **Terminated heroes count as absent** everywhere: not in the roster, not formable
+  into a party, and their entry is free. A party member cannot be terminated;
+  disperse first.
+- **Creation defaults** come from `HeroDefaults`: 100 hit points, 0 magic points,
+  0 food, 0 gold, level 1, status good.
+- **The main menu** gates Journey Onward on `partyFormed`, read from `GET api/roster`
+  when `J` is pressed. Register and Organise are never gated.
+
+## Conflict map selection
+
+A static lookup: **party surface × opponent movement type**, with land-versus-land
+further keyed by the terrain tile the party stands on.
+
+| Party | Opponent | Map |
+|---|---|---|
+| Boat | Sea creature | `conflict-sea` |
+| Boat | Land monster | `conflict-boat-land` |
+| Boat | Pirate | `conflict-boat` |
+| Land | Sea creature | `conflict-land-sea` |
+| Land | Pirate | `conflict-land-boat` |
+| Land | Land monster | `conflict-grass`, `-shrub`, `-forest` or `-pavement`, by current tile |
+
+`OpponentMovement` (Land, Sea, Pirate) is a static property of each monster's data
+entry; Pirate is a single monster hardcoded to that category.
+
+**Built so far**, in `UltimaExodus.Engine/Conflicts/`: `ConflictMapSelector.Select(
+PartySurface, OpponentMovement)` returns a map id or `null` (the endpoint logs a
+message rather than throwing), and `IsConflictMap(mapId)`. Only `conflict-grass`
+(Land × Land) and `conflict-shore` (Land × Sea; the table's `conflict-land-sea`)
+exist as map files; every other combination returns null, and terrain-based
+selection is not built. The party surface is hardcoded to Land until boats exist.
+
+- `MonsterCatalogue` maps a monster tile to its `OpponentMovement`: tile 24 is a
+  land monster, tile 13 a sea creature. This is a lookup by tile because monsters
+  are baked into the overworld tile layer; it is replaced when monsters become
+  dynamic.
+- Both maps are 11 × 11 with the party figures (tile 20) in the bottom rows and the
+  monsters (tile 24 or 13) in the top rows, as solid tiles. `Entities` stays empty.
+- **Client:** `ConflictView` draws the fixed 11 × 11 grid once and moves only the
+  avatar; `OverworldView` scrolls. Both implement `MapView`, and `WorldScene` picks
+  one from `map.category`. The attack prompt is the pure `PendingAttack` class: `A`
+  starts it, the next arrow key attacks instead of moving, and Esc cancels.
+  `Direction?` and `Attack cancelled` are client-only log lines, shown after the
+  server's log until the next snapshot.
+
+## Combat and effect sequencing (planned)
+
+Combat responses, and any other multi-step visual outcome such as a ranged attack,
+are modelled as a **final state plus an ordered list of effects** to animate before
+the client settles on that state. The server never describes *how* to animate
+something, only *what happened*; the client turns each effect into sprites and
+tweens.
+
+```csharp
+public record EffectSequence(
+    string Type,       // "SpellHit", "ArrowFly", "MonsterDeath": fixed vocabulary, TBD
+    string SourceId,
+    string? TargetId,  // matches a MapEntity.Id
+    int DelayMs
+);
+```
+
+## The snapshot
+
+```csharp
+public record GameStateSnapshot(
+    PartyPosition Position,
+    List<LogEntry> Log,
+    WorldClock Clock,
+    List<MapEntity> Entities,
+    List<EffectSequence> Effects,
+    PartyStatus Party
+);
+
+public record PartyPosition(string MapId, MapCategory Category, int X, int Y); // Category serialises as a number
+public record LogEntry(string Text);
+public record WorldClock(int Moon1Phase, int Moon2Phase, string Wind);
+public record PartyStatus(List<PartyMemberStatus> Members);
+public record PartyMemberStatus(int Slot, string Name, string Condition, string Type,
+                                int Magic, int Level, int Hits, int Food);
+```
+
+Returned in full on every action. Today `Clock` is hardcoded; `Party` is built from
+the saved party (one member per slot in party order, `Slot` 1-4, `Type` the
+sex/race/class initials, `Condition` one letter from the hero's status) and is empty
+until a party is formed; `Entities` and `Effects` are always empty. Dungeon facing
+and level will extend `PartyPosition` when dungeons are built.
+
+## Open questions
+
+- The effect-type vocabulary needs designing before combat is built, not
+  discovered during it.
