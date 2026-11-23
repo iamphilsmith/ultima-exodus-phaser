@@ -6,8 +6,6 @@
  * a mountain, just not what is behind it.
  * 
  * 'blocksVisionAt(dx, dy)' reports whether the tile at that offset from the party blocks the vision.
- * 
- * Ported unchanged from the old OverworldView.canSeeTile, including the Math.floor behaviour for negative offsets.
  */
 
 export function canSee(

@@ -1,4 +1,3 @@
-// Ported from the old src/scenes/WorldScene.ts layout constants.
 
 export const TILE = 16;
 export const CHAR_W = 8;
