@@ -33,7 +33,7 @@ public class UltimaExodusDbContext : DbContext
 
             // A roster entry may be held by one ACTIVE hero at a time. Terminated
             // heroes keep their row but are excluded from the index, so the entry
-            // can be reused (this is what fixes the old build's slot-reuse bug).
+            // can be reused.
             hero.HasIndex(h => h.RosterEntry)
                 .IsUnique()
                 .HasFilter("Terminated = 0");

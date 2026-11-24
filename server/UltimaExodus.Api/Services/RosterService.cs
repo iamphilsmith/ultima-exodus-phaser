@@ -101,7 +101,7 @@ public class RosterService(UltimaExodusDbContext db)
         return new FormPartyResult(status, await GetRosterAsync());
     }
 
-    // Always succeeds, even if there was no party (matches the old build).
+    // Always succeeds, even if there was no party.
     public async Task<RosterSnapshot> DisperseAsync()
     {
         var slots = await db.PartySlots.ToListAsync();

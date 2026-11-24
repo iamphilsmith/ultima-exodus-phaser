@@ -18,8 +18,8 @@ public record HeroOptionsSnapshot(
 
 public static class HeroOptions
 {
-    // Lists follow the enum declaration order, which matches the old build's
-    // order on the Create Character screen.
+    // Lists follow the enum declaration order, which is the order the Create
+    // Character screen shows.
     public static HeroOptionsSnapshot GetSnapshot() => new(
         Sexes: Enum.GetValues<Sex>()
             .Select(s => new HeroOption(s.ToString(), HeroInitials.Of(s).ToString()))

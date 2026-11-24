@@ -1,10 +1,9 @@
 namespace UltimaExodus.Engine.State;
 
 /// <summary>
-/// Hardcoded values matching the phase 2 shell. Replaced by real data later
-/// (clock: when the world clock is implemented). The party is real as of phase 5.
+/// The hardcoded world clock (moon phase and wind), until the dynamic world
+/// clock is implemented.
 /// </summary>
-
 public static class StubState
 {
     public static WorldClock Clock => new(0,1,"South");

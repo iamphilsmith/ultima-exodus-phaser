@@ -78,7 +78,7 @@ export class OverworldView implements MapView {
     if (this.wraps) {
       this.renderFog(position);
     } else {
-      this.fog.clear(); // no fog in towns or castles (the old build had none)
+      this.fog.clear(); // fog of war is overworld-only for now
     }
 
   }

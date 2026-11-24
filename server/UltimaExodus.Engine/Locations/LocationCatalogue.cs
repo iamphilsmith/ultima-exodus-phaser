@@ -14,7 +14,7 @@ public static class LocationCatalogue
 {
     private const string Sosaria = "world-sosaria";
 
-    // Towns spawn on the left edge, castles on the south edge (as in the old build).
+    // Towns spawn on the left edge, castles on the south edge.
     private static LocationDef Town(string mapId, int worldX, int worldY, string  message)
         => new(mapId, MapCategory.Town, Sosaria, worldX, worldY, 0, 32, message);
     private static LocationDef Castle(string mapId, int worldX, int worldY, string  message)

@@ -100,8 +100,7 @@ public class RosterServiceTests : IDisposable
         Assert.False(db.Heroes.Single().Terminated);
     }
 
-    // The old build's bug: a terminated hero kept its slot, so reusing the slot
-    // left two rows with the same entry. Now the entry is simply free again.
+    // A terminated hero keeps its row, but its entry is free again for the next hero.
     [Fact]
     public async Task A_terminated_heros_entry_is_reused_by_the_next_hero()
     {
@@ -186,7 +185,7 @@ public class RosterServiceTests : IDisposable
         Assert.Equal(0, db.PartySlots.Count());
     }
 
-    // The old build's bug: a terminated hero could be pulled into a party.
+    // A terminated hero cannot be pulled into a party.
     [Fact]
     public async Task Form_treats_a_terminated_heros_entry_as_empty()
     {

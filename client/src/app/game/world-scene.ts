@@ -32,7 +32,7 @@ import {
 } from './shell-layout';
 import { charFrame, writeText } from './bitmap-text';
 
-// Overworld interpretation of the keys. Moves into the overworld view in step 18
+// Overworld interpretation of the keys.
 const OVERWORLD_COMPASS: Record<InputDirection, CompassDirection> = {
   [InputDirection.Up]: 'North',
   [InputDirection.Right]: 'East',

@@ -12,8 +12,8 @@ public class MonsterCatalogueTests
         Assert.Equal((OpponentMovement?)expected, MonsterCatalogue.FindByTile(tile));
     }
 
-    // 0 water, 1 ground, 20 party avatar, and 14 and 25 are the old build's
-    // 1-based indexes for the monsters, which must not match here.
+    // 0 water, 1 ground and 20 party avatar are not monsters. 14 and 25 sit one
+    // past the monster tiles (13 and 24), so they catch an off-by-one in the lookup.
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
