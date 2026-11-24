@@ -13,8 +13,7 @@ import { HeroOptionsService } from '../services/hero-options';
 @Component({
   selector: 'app-game-canvas',
   standalone: true,
-  templateUrl: './game-canvas.html',
-  styleUrl: './game-canvas.css'
+  template: '<div #gameContainer></div>',
 })
 export class GameCanvas implements AfterViewInit, OnDestroy {
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef<HTMLDivElement>;

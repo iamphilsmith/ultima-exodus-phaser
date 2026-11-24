@@ -7,7 +7,6 @@ import { apiBaseUrl } from './utils/api-base-url';
   selector: 'app-root',
   standalone: true,
   imports: [GameCanvas],
-  styleUrl: './app.css',
   templateUrl: './app.html',
 })
 export class App implements OnInit {
